@@ -1,0 +1,155 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.vistring",
+    "module": "method-trace",
+    "version": "1.0.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.7"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "files": [
+        {
+          "name": "method-trace-1.0.0.jar",
+          "url": "method-trace-1.0.0.jar",
+          "size": 25519,
+          "sha512": "4733460d4badc50b6f8ddc1ae04d657fed26a97792657859a4bcc5ed8bb669027e0296d2d600d7199b7d0b815e58705a7bc290c4c544c48304d0682494fed136",
+          "sha256": "f59a120366a45297a7f66a8eee0e55988c7e69cd871a4807714e22113e439e20",
+          "sha1": "481539a260e3b043fda6c2b0b488c4aa453759a4",
+          "md5": "e03487cfb91b2437316c26806a2fbe1a"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.environment": "standard-jvm",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "jvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.ow2.asm",
+          "module": "asm-commons",
+          "version": {
+            "requires": "9.7"
+          }
+        },
+        {
+          "group": "org.ow2.asm",
+          "module": "asm-util",
+          "version": {
+            "requires": "9.7"
+          }
+        },
+        {
+          "group": "com.android.tools.build",
+          "module": "gradle",
+          "version": {
+            "requires": "8.1.4"
+          }
+        },
+        {
+          "group": "com.google.code.gson",
+          "module": "gson",
+          "version": {
+            "requires": "2.11.0"
+          }
+        },
+        {
+          "group": "com.joom.grip",
+          "module": "grip",
+          "version": {
+            "requires": "0.9.1"
+          }
+        },
+        {
+          "group": "org.javassist",
+          "module": "javassist",
+          "version": {
+            "requires": "3.26.0-GA"
+          }
+        },
+        {
+          "group": "com.github.gundy",
+          "module": "semver4j",
+          "version": {
+            "requires": "0.16.4"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "method-trace-1.0.0.jar",
+          "url": "method-trace-1.0.0.jar",
+          "size": 25519,
+          "sha512": "4733460d4badc50b6f8ddc1ae04d657fed26a97792657859a4bcc5ed8bb669027e0296d2d600d7199b7d0b815e58705a7bc290c4c544c48304d0682494fed136",
+          "sha256": "f59a120366a45297a7f66a8eee0e55988c7e69cd871a4807714e22113e439e20",
+          "sha1": "481539a260e3b043fda6c2b0b488c4aa453759a4",
+          "md5": "e03487cfb91b2437316c26806a2fbe1a"
+        }
+      ]
+    },
+    {
+      "name": "sourcesElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "sources",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "method-trace-1.0.0-sources.jar",
+          "url": "method-trace-1.0.0-sources.jar",
+          "size": 4574,
+          "sha512": "e90906103677ad7b27f7a71f96d20f894eb78b06e2f309c19791099642936c84ece5ddbf2dee7b0a769c58bbaf4c9651a0379b818b60455e3871a7a7549c426b",
+          "sha256": "bf2eb36ae9b40f7c237ff7a4f13b82b0d75ea139c8d599fc12f738dca286f351",
+          "sha1": "0162d5d512d811e309385dc6d5bd809866563ff2",
+          "md5": "864b6dce48f018c67464bde53d7e3b49"
+        }
+      ]
+    },
+    {
+      "name": "javadocElements",
+      "attributes": {
+        "org.gradle.category": "documentation",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.docstype": "javadoc",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "method-trace-1.0.0-javadoc.jar",
+          "url": "method-trace-1.0.0-javadoc.jar",
+          "size": 261,
+          "sha512": "5b5ae72c04e288987712f0c7f6353d7059cfedff38016e44748603e1185fd36e6fe980073b643dbbafb9231f4537561aa938127faf565ae34f75c2714f1ca749",
+          "sha256": "488201e563ab7084933aac2d9de15ef47b4613b8e7237573f5fc7f139850c21b",
+          "sha1": "6bf0edd98ddcad147bce767b0357b9d9ee54eed7",
+          "md5": "22504dbb2b318def4b36674ddec69326"
+        }
+      ]
+    }
+  ]
+}
