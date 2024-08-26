@@ -4,10 +4,8 @@ import com.android.build.api.artifact.ScopedArtifact
 import com.android.build.api.variant.AndroidComponentsExtension
 import com.android.build.api.variant.ScopedArtifacts
 import com.android.build.gradle.AppPlugin
-import com.joom.grip.Grip
-import com.joom.grip.GripFactory
-import com.joom.grip.annotatedWith
-import com.joom.grip.classes
+import com.vistring.trace.config.VSMethodTraceConfig
+import com.vistring.trace.config.VSMethodTraceInitConfig
 import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -21,8 +19,8 @@ import org.gradle.api.tasks.CompileClasspath
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import org.gradle.kotlin.dsl.extra
 import org.gradle.kotlin.dsl.register
-import org.objectweb.asm.Opcodes
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -35,6 +33,7 @@ class VSMethodTracePlugin : Plugin<Project> {
     companion object {
 
         const val TAG = "VSMethodTracePlugin"
+        const val EXT_METHOD_TRACE_CONFIG = "methodTraceConfig"
 
     }
 
@@ -55,6 +54,9 @@ class VSMethodTracePlugin : Plugin<Project> {
         @get:CompileClasspath
         abstract var classpath: FileCollection
 
+        private val methodTraceConfig =
+            project.extra[EXT_METHOD_TRACE_CONFIG] as VSMethodTraceConfig
+
         private var isMergeOutputFileStr = project
             .properties["vs_method_trace_is_merge_output_file"]
             ?.toString() ?: ""
@@ -62,8 +64,21 @@ class VSMethodTracePlugin : Plugin<Project> {
         @TaskAction
         fun taskAction() {
 
-            // 读取配置的属性 isMergeOutputFile
+            // 路径匹配器
+            val pathMatcher = PathMatcher(
+                enableLog = methodTraceConfig.enableLog,
+                enableAdvancedMatch = methodTraceConfig.enableAdvancedMatch,
+                includePackagePrefixSet = methodTraceConfig.includePackagePrefixSet,
+                excludePackagePrefixSet = methodTraceConfig.excludePackagePrefixSet,
+                includePackagePatternSet = methodTraceConfig.includePackagePatternSet,
+                excludePackagePatternSet = methodTraceConfig.excludePackagePatternSet,
+            ).apply {
+                if (methodTraceConfig.enableLog) {
+                    println("pathMatcher: $this")
+                }
+            }
 
+            // 读取配置的属性 isMergeOutputFile
             val isMergeOutputFile = runCatching {
                 isMergeOutputFileStr.toBoolean()
             }.getOrNull() ?: false
@@ -72,19 +87,10 @@ class VSMethodTracePlugin : Plugin<Project> {
             val outputFile = output.asFile.get()
             val allJarList = allJars.get()
 
-            println("$TAG, isMergeOutputFile = $isMergeOutputFile")
-            println("$TAG, output = ${outputFile.path}, outputFileIsExist = ${outputFile.exists()}")
-
-            // 输入的 jar、aar、源码
-            val inputs = (allJarList + allDirectories.get()).map { it.asFile.toPath() }
-
-            // 系统依赖
-            val classPaths = bootClasspath.get().map { it.asFile.toPath() }
-                .toSet() + classpath.files.map { it.toPath() }
-
-            val grip: Grip =
-                GripFactory.newInstance(Opcodes.ASM9)
-                    .create(classPaths + inputs)
+            if (methodTraceConfig.enableLog) {
+                println("$TAG, isMergeOutputFile = $isMergeOutputFile")
+                println("$TAG, output = ${outputFile.path}, outputFileIsExist = ${outputFile.exists()}")
+            }
 
             val targetAllJars = if (isMergeOutputFile) {
                 // 是否 AllJars 中有输出文件
@@ -115,27 +121,6 @@ class VSMethodTracePlugin : Plugin<Project> {
                 allJarList
             }
 
-            // 找到所有满足条件的 class
-            val moduleNameMap = grip
-                .select(classes)
-                .from(inputs)
-                .where(
-                    annotatedWith(
-                        annotationType = com.joom.grip.mirrors.getType(
-                            descriptor = "Lcom/xiaojinzi/component/anno/support/ModuleApplicationAnno;",
-                        )
-                    )
-                )
-                .execute()
-                .classes
-                .associate {
-                    it.name
-                        .removePrefix(prefix = "com.xiaojinzi.component.impl.")
-                        .removeSuffix(suffix = "ModuleGenerated") to "${it.name}.class"
-                }
-
-            println("$TAG, moduleNameMap = $moduleNameMap")
-
             val jarOutput = JarOutputStream(
                 BufferedOutputStream(
                     FileOutputStream(
@@ -147,18 +132,25 @@ class VSMethodTracePlugin : Plugin<Project> {
             targetAllJars.forEach { file ->
                 val jarFile = JarFile(file.asFile)
                 jarFile.entries().iterator().forEach { jarEntry ->
+                    // jarEntry.name
+                    // kotlin/ranges/ClosedRange.kotlin_metadata
+                    // kotlin/ranges/RangesKt__RangesKt.class
                     try {
                         jarOutput.putNextEntry(JarEntry(jarEntry.name))
-                        if (jarEntry.isDirectory) {
+                        if (jarEntry.isDirectory || !jarEntry.name.endsWith(".class")) {
                             jarFile.getInputStream(jarEntry).use {
                                 it.copyTo(jarOutput)
                             }
                         } else {
                             jarOutput.write(
-                                AsmTestUtil.test(
-                                    name = jarEntry.name,
-                                    classFileInputStream = jarFile.getInputStream(jarEntry),
-                                )
+                                jarFile.getInputStream(jarEntry).use { classFileInputStream ->
+                                    AsmUtil.transform(
+                                        enableLog = methodTraceConfig.enableLog,
+                                        pathMatcher = pathMatcher,
+                                        name = jarEntry.name,
+                                        classFileInputStream = classFileInputStream,
+                                    )
+                                }
                             )
                         }
                         jarFile.getInputStream(jarEntry).use {
@@ -177,6 +169,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                     if (file.isFile) {
                         val relativePath = directory.asFile.toURI().relativize(file.toURI()).path
                         // println("relativePath = $relativePath")
+                        // com/vistring/vlogger/android/media/Mp4AudioDecoder.class
                         jarOutput.putNextEntry(
                             JarEntry(
                                 relativePath.replace(
@@ -186,10 +179,14 @@ class VSMethodTracePlugin : Plugin<Project> {
                             )
                         )
                         jarOutput.write(
-                            AsmTestUtil.test(
-                                name = relativePath,
-                                classFileInputStream = file.inputStream(),
-                            )
+                            file.inputStream().use { classFileInputStream ->
+                                AsmUtil.transform(
+                                    enableLog = methodTraceConfig.enableLog,
+                                    pathMatcher = pathMatcher,
+                                    name = relativePath,
+                                    classFileInputStream = classFileInputStream,
+                                )
+                            }
                         )
                         jarOutput.closeEntry()
                     }
@@ -198,13 +195,24 @@ class VSMethodTracePlugin : Plugin<Project> {
 
             jarOutput.close()
 
-            println("----------- outputFilePath: ${output.asFile.get().path}")
+            if (methodTraceConfig.enableLog) {
+                println("----------- outputFilePath: ${output.asFile.get().path}")
+            }
 
         }
 
     }
 
     override fun apply(project: Project) {
+
+        val isApp = project.plugins.hasPlugin(AppPlugin::class.java)
+
+        if (!isApp) {
+            return
+        }
+
+        // 添加扩展
+        project.extensions.add("vsMethodTraceConfig", VSMethodTraceInitConfig::class.java)
 
         with(project) {
 
@@ -214,22 +222,51 @@ class VSMethodTracePlugin : Plugin<Project> {
                     .findByType(AndroidComponentsExtension::class.java)
 
                 androidComponents?.onVariants { variant ->
-                    val name = "${variant.name}VSMethodTrace"
-                    val taskProvider = tasks.register<ModifyClassesTask>(name) {
-                        group = "vsMethodTrace"
-                        description = name
-                        bootClasspath.set(androidComponents.sdkComponents.bootClasspath)
-                        classpath = variant.compileClasspath
-                    }
 
-                    variant.artifacts.forScope(ScopedArtifacts.Scope.ALL)
-                        .use(taskProvider)
-                        .toTransform(
-                            ScopedArtifact.CLASSES,
-                            ModifyClassesTask::allJars,
-                            ModifyClassesTask::allDirectories,
-                            ModifyClassesTask::output
-                        )
+                    val vsMethodTraceConfig =
+                        project.extensions.findByType(VSMethodTraceInitConfig::class.java)
+                    val isMethodTraceEnable = vsMethodTraceConfig?.enable ?: true
+                    val enableLog = vsMethodTraceConfig?.enableLog ?: false
+
+                    if (isMethodTraceEnable) {
+
+                        // 存入 extra
+                        project
+                            .extra
+                            .set(
+                                EXT_METHOD_TRACE_CONFIG,
+                                VSMethodTraceConfig(
+                                    enableLog = enableLog,
+                                    enableAdvancedMatch = vsMethodTraceConfig?.enableAdvancedMatch
+                                        ?: false,
+                                    includePackagePrefixSet = vsMethodTraceConfig?.includePackagePrefixSet
+                                        ?: emptySet(),
+                                    excludePackagePrefixSet = vsMethodTraceConfig?.excludePackagePrefixSet
+                                        ?: emptySet(),
+                                    includePackagePatternSet = vsMethodTraceConfig?.includePackagePatternSet
+                                        ?: emptySet(),
+                                    excludePackagePatternSet = vsMethodTraceConfig?.excludePackagePatternSet
+                                        ?: emptySet(),
+                                )
+                            )
+
+                        val name = "${variant.name}VSMethodTrace"
+                        val taskProvider = tasks.register<ModifyClassesTask>(name) {
+                            group = "vsMethodTrace"
+                            description = name
+                            bootClasspath.set(androidComponents.sdkComponents.bootClasspath)
+                            classpath = variant.compileClasspath
+                        }
+
+                        variant.artifacts.forScope(ScopedArtifacts.Scope.ALL)
+                            .use(taskProvider)
+                            .toTransform(
+                                ScopedArtifact.CLASSES,
+                                ModifyClassesTask::allJars,
+                                ModifyClassesTask::allDirectories,
+                                ModifyClassesTask::output
+                            )
+                    }
 
                 }
 

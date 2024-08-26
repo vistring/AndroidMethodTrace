@@ -4,6 +4,14 @@ plugins {
     id("com.vistring.trace.method.plugin")
 }
 
+vsMethodTraceConfig {
+    enableLog = true
+    includePackagePrefixSet = setOf(
+        "com.vistring.trace.demo.view",
+        "com.vistring.trace.demo.test",
+    )
+}
+
 android {
     namespace = "com.vistring.methodtrace"
     compileSdk = 34

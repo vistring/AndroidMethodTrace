@@ -8,16 +8,31 @@ import org.objectweb.asm.Opcodes
 import org.objectweb.asm.commons.AdviceAdapter
 import java.io.InputStream
 
-object AsmTestUtil {
+object AsmUtil {
 
-    fun test(
+    val CLASS_NAME_IGNORE_LIST = listOf(
+        "com.vistring.trace.MethodTracker",
+        "com.vistring.trace.MethodInfo",
+    )
+
+    fun transform(
+        enableLog: Boolean = false,
+        pathMatcher: PathMatcher,
+        // xxx/xxx/xxx.class
         name: String,
         classFileInputStream: InputStream,
     ): ByteArray {
         val originClassBytes = classFileInputStream.readBytes()
-        val className = name.removeSuffix(suffix = ".class").replace("/", ".")
-        return if (className.startsWith("com.vistring.vlogger.android")) {
-            println("vsMethodTrace.className = $className")
+        val className = name
+            .removeSuffix(suffix = ".class")
+            .replace("/", ".")
+        // 此包下是 trace 耗时统计的模块, 不需要处理
+        return if (CLASS_NAME_IGNORE_LIST.any { it == className }) {
+            originClassBytes
+        } else if (pathMatcher.isMatch(className = className)) {
+            if (enableLog) {
+                println("$VSMethodTracePlugin transform successful: $className")
+            }
             val asmApi = Opcodes.ASM9
             return kotlin.runCatching {
                 val classReader = ClassReader(
@@ -26,17 +41,6 @@ object AsmTestUtil {
                 val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
 
                 val classVisitor = object : ClassVisitor(asmApi, classWriter) {
-                    override fun visit(
-                        version: Int,
-                        access: Int,
-                        name: String?,
-                        signature: String?,
-                        superName: String?,
-                        interfaces: Array<out String>?
-                    ) {
-                        super.visit(version, access, name, signature, superName, interfaces)
-                        // println("访问到 class: $name, access = $access, isAnnotation = ${access and Opcodes.ACC_ANNOTATION}, signature = $signature， superName = $superName")
-                    }
 
                     override fun visitMethod(
                         access: Int,
@@ -87,13 +91,12 @@ object AsmTestUtil {
                     }
                 }
                 classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
-
                 classWriter.toByteArray()
             }.apply {
-                if (this.isFailure) {
-                    this.exceptionOrNull()?.printStackTrace()
+                if (enableLog && this.isFailure) {
+                    println("$VSMethodTracePlugin transform fail: $className")
                 }
-            }.getOrNull()?: originClassBytes
+            }.getOrNull() ?: originClassBytes
         } else {
             originClassBytes
         }
