@@ -1,3 +1,6 @@
+import io.grpc.internal.SharedResourceHolder.release
+import org.gradle.internal.impldep.org.codehaus.plexus.util.MatchPatterns.from
+
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.jetbrains.kotlin.android)
@@ -34,12 +37,28 @@ android {
 }
 
 dependencies {
+    compileOnly(libs.androidx.annotation.jvm)
+}
 
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+tasks.register<Jar>("androidSourcesJar") {
+    archiveClassifier.set("sources")
+    from(
+        android.sourceSets.getByName("main").java.srcDirs,
+    )
+}
 
+artifacts {
+    archives(tasks["androidSourcesJar"])
+}
+
+afterEvaluate {
+    publishing {
+        publications {
+            // Creates a Maven publication called "release".
+            create<MavenPublication>("release") {
+                // Applies the component for the release build variant.
+                from(components["release"])
+            }
+        }
+    }
 }

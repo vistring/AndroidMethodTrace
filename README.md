@@ -85,4 +85,6 @@ implementation("com.github.vistring.AndroidMethodTrace:method-trace:<version>")
 
 > 输出效果
 
+请根据 "VSMethodTracker" 作为 tag 进行日志过滤
+
 [点我请查看 log 文件](./traceLog.txt)

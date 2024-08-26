@@ -24,6 +24,7 @@ object MethodTracker {
 
     private val methodStack = ThreadLocal<Stack<MethodInfo>>()
 
+    // 不是给用户调用的, 是给插件生成的代码调用的
     @JvmStatic
     fun start(name: String) {
         methodStack.getOrSet { Stack<MethodInfo>() }.add(
@@ -35,6 +36,7 @@ object MethodTracker {
         )
     }
 
+    // 不是给用户调用的, 是给插件生成的代码调用的
     @JvmStatic
     fun end(name: String) {
         methodStack.get()?.let { stack ->
