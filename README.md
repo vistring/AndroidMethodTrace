@@ -2,7 +2,7 @@
 
 ---
 
-添加 MethodTrace 依赖 [![](https://www.jitpack.io/v/vistring/AndroidMethodTrace.svg)](https://www.jitpack.io/#vistring/AndroidMethodTrace), 下面的 <version> 都用此版本代替
+添加 MethodTrace 依赖 [![](https://www.jitpack.io/v/vistring/AndroidMethodTrace.svg)](https://www.jitpack.io/#vistring/AndroidMethodTrace), 下面的 '<version>' 都用此版本代替
 
 https://www.jitpack.io/#vistring/AndroidMethodTrace
 
