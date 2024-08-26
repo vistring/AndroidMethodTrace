@@ -5,12 +5,19 @@ package com.vistring.trace.config
  * 这里必须写 open class, 不能用 data class, 否则在 Gradle 插件使用中会出错
  */
 open class VSMethodTraceInitConfig(
+    // 是否开启方法耗时统计
     var enable: Boolean? = null,
+    // 是否开启日志
     var enableLog: Boolean? = null,
+    // 是否开启高级匹配
     var enableAdvancedMatch: Boolean? = null,
+    // 包含的包名前缀
     var includePackagePrefixSet: Set<String>? = null,
+    // 排除的包名前缀
     var excludePackagePrefixSet: Set<String>? = null,
+    // 包含的包名正则
     var includePackagePatternSet: Set<String>? = null,
+    // 排除的包名正则
     var excludePackagePatternSet: Set<String>? = null,
 )
 
