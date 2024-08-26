@@ -15,139 +15,80 @@
   },
   "variants": [
     {
-      "name": "apiElements",
+      "name": "releaseApiElements-published",
       "attributes": {
         "org.gradle.category": "library",
-        "org.gradle.dependency.bundling": "external",
-        "org.gradle.jvm.environment": "standard-jvm",
-        "org.gradle.jvm.version": 17,
-        "org.gradle.libraryelements": "jar",
         "org.gradle.usage": "java-api",
-        "org.jetbrains.kotlin.platform.type": "jvm"
-      },
-      "files": [
-        {
-          "name": "method-trace-1.0.0.jar",
-          "url": "method-trace-1.0.0.jar",
-          "size": 33451,
-          "sha512": "db7b2f0bff191a4897fec6159b6bc82338719c46e1a95584ae179a59846a0cf47463608ea1eebe0d5afdd76780354d6365f386b244f195eff03d8a3ba278225e",
-          "sha256": "8682ae1cf509b6db2cb1a8b0fb5af264db38927d12d9de306a373e0462bf061c",
-          "sha1": "5e48f95d1699580f131c9f6ff48b5ac240566a4e",
-          "md5": "3bdac38f3b1d7ff9fc8af949d6aae633"
-        }
-      ]
-    },
-    {
-      "name": "runtimeElements",
-      "attributes": {
-        "org.gradle.category": "library",
-        "org.gradle.dependency.bundling": "external",
-        "org.gradle.jvm.environment": "standard-jvm",
-        "org.gradle.jvm.version": 17,
-        "org.gradle.libraryelements": "jar",
-        "org.gradle.usage": "java-runtime",
-        "org.jetbrains.kotlin.platform.type": "jvm"
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
       },
       "dependencies": [
         {
-          "group": "org.ow2.asm",
-          "module": "asm-commons",
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib-jdk8",
           "version": {
-            "requires": "9.7"
-          }
-        },
-        {
-          "group": "org.ow2.asm",
-          "module": "asm-util",
-          "version": {
-            "requires": "9.7"
-          }
-        },
-        {
-          "group": "com.android.tools.build",
-          "module": "gradle",
-          "version": {
-            "requires": "8.1.4"
-          }
-        },
-        {
-          "group": "com.google.code.gson",
-          "module": "gson",
-          "version": {
-            "requires": "2.11.0"
-          }
-        },
-        {
-          "group": "com.joom.grip",
-          "module": "grip",
-          "version": {
-            "requires": "0.9.1"
-          }
-        },
-        {
-          "group": "org.javassist",
-          "module": "javassist",
-          "version": {
-            "requires": "3.26.0-GA"
-          }
-        },
-        {
-          "group": "com.github.gundy",
-          "module": "semver4j",
-          "version": {
-            "requires": "0.16.4"
+            "requires": "1.9.0"
           }
         }
       ],
       "files": [
         {
-          "name": "method-trace-1.0.0.jar",
-          "url": "method-trace-1.0.0.jar",
-          "size": 33451,
-          "sha512": "db7b2f0bff191a4897fec6159b6bc82338719c46e1a95584ae179a59846a0cf47463608ea1eebe0d5afdd76780354d6365f386b244f195eff03d8a3ba278225e",
-          "sha256": "8682ae1cf509b6db2cb1a8b0fb5af264db38927d12d9de306a373e0462bf061c",
-          "sha1": "5e48f95d1699580f131c9f6ff48b5ac240566a4e",
-          "md5": "3bdac38f3b1d7ff9fc8af949d6aae633"
+          "name": "method-trace-1.0.0.aar",
+          "url": "method-trace-1.0.0.aar",
+          "size": 5733,
+          "sha512": "e8d4fdede68794a6be80e2c53f4dae7104971cb5f45682db8dc4c71ef98841cdbab5ab06a3462e91a108fb720ff4c3360b07bdbf357cfbbe8dfddca1a6e90ef5",
+          "sha256": "1aea539ad4d6df43eaf4504b02b8b97e8c60d37e078a1f8683a80a98c8031f85",
+          "sha1": "2ee3d216e5923898d9021f206c04851285cbb560",
+          "md5": "3533eb87ee7e7e8d9624db7b1798ed7a"
         }
       ]
     },
     {
-      "name": "sourcesElements",
+      "name": "releaseRuntimeElements-published",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
+      },
+      "dependencies": [
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib-jdk8",
+          "version": {
+            "requires": "1.9.0"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "method-trace-1.0.0.aar",
+          "url": "method-trace-1.0.0.aar",
+          "size": 5733,
+          "sha512": "e8d4fdede68794a6be80e2c53f4dae7104971cb5f45682db8dc4c71ef98841cdbab5ab06a3462e91a108fb720ff4c3360b07bdbf357cfbbe8dfddca1a6e90ef5",
+          "sha256": "1aea539ad4d6df43eaf4504b02b8b97e8c60d37e078a1f8683a80a98c8031f85",
+          "sha1": "2ee3d216e5923898d9021f206c04851285cbb560",
+          "md5": "3533eb87ee7e7e8d9624db7b1798ed7a"
+        }
+      ]
+    },
+    {
+      "name": "releaseSourcesElements-published",
       "attributes": {
         "org.gradle.category": "documentation",
         "org.gradle.dependency.bundling": "external",
         "org.gradle.docstype": "sources",
-        "org.gradle.usage": "java-runtime"
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime",
+        "org.jetbrains.kotlin.platform.type": "androidJvm"
       },
       "files": [
         {
           "name": "method-trace-1.0.0-sources.jar",
           "url": "method-trace-1.0.0-sources.jar",
-          "size": 6017,
-          "sha512": "b53ff01edcfbd9742dbb8f4dffd2a1c45a84df286d2ad5083d6500b346c1b0ecd2a0cc5ef93f07730141b7b08320b980e45d089da6541517fd7cb34bf6dfd3ae",
-          "sha256": "a17246027aa05240e9439bd5e8955078e2e869b74bbf73e5731765e2524d1cbc",
-          "sha1": "36954555fefc12d582edc5d8beb354d26b350a62",
-          "md5": "bbac9e7f2864846813a1e9c2b8f79187"
-        }
-      ]
-    },
-    {
-      "name": "javadocElements",
-      "attributes": {
-        "org.gradle.category": "documentation",
-        "org.gradle.dependency.bundling": "external",
-        "org.gradle.docstype": "javadoc",
-        "org.gradle.usage": "java-runtime"
-      },
-      "files": [
-        {
-          "name": "method-trace-1.0.0-javadoc.jar",
-          "url": "method-trace-1.0.0-javadoc.jar",
-          "size": 261,
-          "sha512": "5b5ae72c04e288987712f0c7f6353d7059cfedff38016e44748603e1185fd36e6fe980073b643dbbafb9231f4537561aa938127faf565ae34f75c2714f1ca749",
-          "sha256": "488201e563ab7084933aac2d9de15ef47b4613b8e7237573f5fc7f139850c21b",
-          "sha1": "6bf0edd98ddcad147bce767b0357b9d9ee54eed7",
-          "md5": "22504dbb2b318def4b36674ddec69326"
+          "size": 2859,
+          "sha512": "f9197022c1726854c03fa34577e99396f3ac2b44cd74979dab258ae709017dd75153721cd5b5980f9723b9e13ae2a5fa34d0f6b4cd0439a84d1bac3b5fb88708",
+          "sha256": "696aa558ecc64862900c0ee37f43e05f8bd23c036d4068dd9c2c9b9e63ea1457",
+          "sha1": "65a29b3fd4708bac3cf77c3551c25942dfb81ceb",
+          "md5": "fcee88d1dc3de0d762b7e8e1c5aabc5a"
         }
       ]
     }

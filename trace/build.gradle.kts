@@ -1,5 +1,3 @@
-import io.grpc.internal.SharedResourceHolder.release
-import org.gradle.internal.impldep.org.codehaus.plexus.util.MatchPatterns.from
 
 plugins {
     alias(libs.plugins.android.library)
@@ -58,6 +56,14 @@ afterEvaluate {
             create<MavenPublication>("release") {
                 // Applies the component for the release build variant.
                 from(components["release"])
+                groupId = "com.vistring"
+                artifactId = "method-trace"
+                version = "1.0.0"
+            }
+        }
+        repositories {
+            maven {
+                url = uri("$rootDir/LocalRepo")
             }
         }
     }

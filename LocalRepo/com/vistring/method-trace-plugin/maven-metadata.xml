@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <metadata>
   <groupId>com.vistring</groupId>
-  <artifactId>method-trace</artifactId>
+  <artifactId>method-trace-plugin</artifactId>
   <versioning>
     <latest>1.0.0</latest>
     <release>1.0.0</release>
     <versions>
       <version>1.0.0</version>
     </versions>
-    <lastUpdated>20240826094021</lastUpdated>
+    <lastUpdated>20240826093730</lastUpdated>
   </versioning>
 </metadata>

@@ -16,7 +16,7 @@ java {
 }
 
 group = "com.vistring"
-archivesName = "method-trace"
+archivesName = "method-trace-plugin"
 version = "1.0.0"
 
 // 配置模块的 freeCompilerArgs 参数
