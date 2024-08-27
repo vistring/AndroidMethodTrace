@@ -1,9 +1,14 @@
+import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util.archivesName
 
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.jetbrains.kotlin.android)
     id("maven-publish")
 }
+
+group = "com.vistring"
+archivesName = "method-trace"
+version = "1.0.0"
 
 android {
     namespace = "com.vistring.trace"
@@ -64,9 +69,9 @@ afterEvaluate {
             create<MavenPublication>("release") {
                 // Applies the component for the release build variant.
                 from(components["release"])
-                groupId = "com.vistring"
-                artifactId = "method-trace"
-                version = "1.0.0"
+                groupId = group.toString()
+                artifactId = archivesName.get()
+                version = version
             }
         }
         repositories {

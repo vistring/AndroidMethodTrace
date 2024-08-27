@@ -7,6 +7,10 @@ plugins {
     id("maven-publish")
 }
 
+group = "com.vistring"
+archivesName = "method-trace-plugin"
+version = "1.0.0"
+
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -14,10 +18,6 @@ java {
         languageVersion.set(JavaLanguageVersion.of(JavaVersion.VERSION_17.toString()))
     }
 }
-
-group = "com.vistring"
-archivesName = "method-trace-plugin"
-version = "1.0.0"
 
 // 配置模块的 freeCompilerArgs 参数
 /*tasks.withType(KotlinCompile).configureEach {
