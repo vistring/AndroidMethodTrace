@@ -13,6 +13,8 @@ object AsmUtil {
     val CLASS_NAME_IGNORE_LIST = listOf(
         "com.vistring.trace.MethodTracker",
         "com.vistring.trace.MethodInfo",
+        // 这个会在 MethodTracker 的 start 方法中调用, 会导致死循环,
+        "kotlin.jvm.internal.Intrinsics",
     )
 
     fun transform(

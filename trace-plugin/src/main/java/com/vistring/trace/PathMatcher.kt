@@ -10,6 +10,7 @@ class PathMatcher(
     val excludePackagePrefixSet: Set<String>,
     val includePackagePatternSet: Set<String>,
     val excludePackagePatternSet: Set<String>,
+    val matchAll: Boolean,
 ) {
 
     private val includePackagePatternSetAdapter = includePackagePatternSet.map {
@@ -24,7 +25,7 @@ class PathMatcher(
      * @param className xxx.xxx.xxx
      */
     fun isMatch(className: String): Boolean {
-        return if (enableAdvancedMatch) {
+        return matchAll || if (enableAdvancedMatch) {
             !excludePackagePatternSetAdapter.any { pattern ->
                 pattern.matcher(className).matches()
             } && includePackagePatternSetAdapter.any { pattern ->

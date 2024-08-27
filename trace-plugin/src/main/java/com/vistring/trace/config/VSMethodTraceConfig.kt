@@ -19,6 +19,8 @@ open class VSMethodTraceInitConfig(
     var includePackagePatternSet: Set<String>? = null,
     // 排除的包名正则
     var excludePackagePatternSet: Set<String>? = null,
+    // 是否匹配所有 (不建议使用, 因为很多三方的也会被统计到, 但是你却没办法去修正)
+    var matchAll: Boolean? = null,
 )
 
 data class VSMethodTraceConfig(
@@ -28,4 +30,5 @@ data class VSMethodTraceConfig(
     val excludePackagePrefixSet: Set<String>,
     val includePackagePatternSet: Set<String>,
     val excludePackagePatternSet: Set<String>,
+    val matchAll: Boolean,
 )

@@ -72,6 +72,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                 excludePackagePrefixSet = methodTraceConfig.excludePackagePrefixSet,
                 includePackagePatternSet = methodTraceConfig.includePackagePatternSet,
                 excludePackagePatternSet = methodTraceConfig.excludePackagePatternSet,
+                matchAll = methodTraceConfig.matchAll,
             ).apply {
                 if (methodTraceConfig.enableLog) {
                     println("pathMatcher: $this")
@@ -247,6 +248,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                                         ?: emptySet(),
                                     excludePackagePatternSet = vsMethodTraceConfig?.excludePackagePatternSet
                                         ?: emptySet(),
+                                    matchAll = vsMethodTraceConfig?.matchAll ?: false,
                                 )
                             )
 

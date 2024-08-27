@@ -6,9 +6,13 @@ plugins {
 
 vsMethodTraceConfig {
     enableLog = true
-    includePackagePrefixSet = setOf(
+    /*includePackagePrefixSet = setOf(
         "com.vistring.trace.demo.view",
         "com.vistring.trace.demo.test",
+    )*/
+    enableAdvancedMatch = true
+    includePackagePatternSet = setOf(
+        "com\\.vistring\\..*",
     )
 }
 
