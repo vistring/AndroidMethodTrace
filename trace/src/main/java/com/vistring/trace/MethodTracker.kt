@@ -12,7 +12,10 @@ private data class MethodInfo(
     val methodName: String,
     val isMainThread: Boolean,
     var startTime: Long = 0,
-    var subMethodCostTotalTime: Long = 0,
+    // 修改发生在下一层的方法上
+    var subMethodTotalTime: Long = 0,
+    // 修改发生在下一层的方法上
+    var subMethodTotalUnReportTime: Long = 0,
 )
 
 /**
@@ -54,18 +57,20 @@ object MethodTracker {
     ) {
         methodStack.get()?.let { stack ->
             val currentMethodInfo = stack.peek()
-            if(currentMethodInfo.methodFlag == methodFlag) {
+            if (currentMethodInfo.methodFlag == methodFlag) {
                 stack.pop()
                 val previousMethodInfo = if (stack.isEmpty()) null else stack.peek()
                 val currentTime = System.currentTimeMillis()
                 // 方法总耗时
                 val methodTotalCost = currentTime - currentMethodInfo.startTime
                 // 方法耗时, 减去了统计出来的子方法的耗时. 如果子方法没被统计到, 那么耗时也会表现在这里
-                val methodCost = methodTotalCost - currentMethodInfo.subMethodCostTotalTime
+                val methodCost = methodTotalCost - currentMethodInfo.subMethodTotalTime
                 previousMethodInfo?.run {
-                    this.subMethodCostTotalTime += methodCost + currentMethodInfo.subMethodCostTotalTime
+                    this.subMethodTotalTime += methodCost + currentMethodInfo.subMethodTotalTime
                 }
-                if (currentMethodInfo.isMainThread && methodCost > 100) {
+                if (currentMethodInfo.isMainThread &&
+                    (methodCost + currentMethodInfo.subMethodTotalUnReportTime) > 100
+                ) {
                     Log.d(
                         TAG,
                         "methodFlag = $methodFlag, methodTotalCost = $methodTotalCost, methodCost = $methodCost",
@@ -86,6 +91,10 @@ object MethodTracker {
                                 isPrint = true
                             }
                         }
+                } else {
+                    previousMethodInfo?.run {
+                        this.subMethodTotalUnReportTime += methodCost + currentMethodInfo.subMethodTotalUnReportTime
+                    }
                 }
             }
         }

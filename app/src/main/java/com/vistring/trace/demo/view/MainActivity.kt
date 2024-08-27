@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
                     Button(
                         onClick = {
                             runCatching {
-                                TestDelay.testMethod2()
+                                TestDelay.testMethod()
                             }
                         }
                     ) {

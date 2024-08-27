@@ -2,12 +2,22 @@ package com.vistring.trace.demo.test
 
 object TestDelay {
 
-    private fun testMethod1() {
-        Thread.sleep(110)
+    private fun sleep80() {
+        Thread.sleep(80)
     }
 
-    fun testMethod2() {
-        testMethod1()
+    private fun sleep120() {
+        Thread.sleep(120)
+    }
+
+    fun testMethod() {
+        sleep80()
+        sleep80()
+        sleep120()
+    }
+
+    fun testTryCatchMethod() {
+        sleep80()
         Thread.sleep(200)
         try {
             try {
