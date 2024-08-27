@@ -24,9 +24,15 @@ private data class MethodInfo(
 @Keep
 object MethodTracker {
 
-    const val TAG = "VSMethodTracker"
+    private const val TAG = "VSMethodTracker"
 
     private val methodStack = ThreadLocal<Stack<MethodInfo>>()
+
+    /**
+     * 耗时的时间判断, Gradle 插件配置的地方可以配置
+     * [Long.MAX_VALUE] 表示不生效
+     */
+    private const val COST_TIME_THRESHOLD = Long.MAX_VALUE
 
     // 不是给用户调用的, 是给插件生成的代码调用的
     @JvmStatic
@@ -69,7 +75,7 @@ object MethodTracker {
                     this.subMethodTotalTime += methodCost + currentMethodInfo.subMethodTotalTime
                 }
                 if (currentMethodInfo.isMainThread &&
-                    (methodCost + currentMethodInfo.subMethodTotalUnReportTime) > 100
+                    (methodCost + currentMethodInfo.subMethodTotalUnReportTime) > COST_TIME_THRESHOLD
                 ) {
                     Log.d(
                         TAG,

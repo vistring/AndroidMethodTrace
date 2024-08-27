@@ -49,6 +49,8 @@ android {
 
 dependencies {
     compileOnly(libs.androidx.annotation.jvm)
+    // 引入 junit 依赖
+    testImplementation("junit:junit:4.13.2")
 }
 
 tasks.register<Jar>("androidSourcesJar") {

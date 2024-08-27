@@ -148,6 +148,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                             jarOutput.write(
                                 jarFile.getInputStream(jarEntry).use { classFileInputStream ->
                                     AsmUtil.transform(
+                                        costTimeThreshold = methodTraceConfig.costTimeThreshold,
                                         enableLog = methodTraceConfig.enableLog,
                                         pathMatcher = pathMatcher,
                                         name = jarEntry.name,
@@ -184,6 +185,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                         jarOutput.write(
                             file.inputStream().use { classFileInputStream ->
                                 AsmUtil.transform(
+                                    costTimeThreshold = methodTraceConfig.costTimeThreshold,
                                     enableLog = methodTraceConfig.enableLog,
                                     pathMatcher = pathMatcher,
                                     name = relativePath,
@@ -229,7 +231,6 @@ class VSMethodTracePlugin : Plugin<Project> {
                     val vsMethodTraceConfig =
                         project.extensions.findByType(VSMethodTraceInitConfig::class.java)
                     val isMethodTraceEnable = vsMethodTraceConfig?.enable ?: true
-                    val enableLog = vsMethodTraceConfig?.enableLog ?: false
 
                     if (isMethodTraceEnable) {
 
@@ -239,7 +240,8 @@ class VSMethodTracePlugin : Plugin<Project> {
                             .set(
                                 EXT_METHOD_TRACE_CONFIG,
                                 VSMethodTraceConfig(
-                                    enableLog = enableLog,
+                                    costTimeThreshold = vsMethodTraceConfig?.costTimeThreshold?: Long.MAX_VALUE,
+                                    enableLog = vsMethodTraceConfig?.enableLog ?: false,
                                     includePackagePrefixSet = vsMethodTraceConfig?.includePackagePrefixSet
                                         ?: emptySet(),
                                     excludePackagePrefixSet = vsMethodTraceConfig?.excludePackagePrefixSet

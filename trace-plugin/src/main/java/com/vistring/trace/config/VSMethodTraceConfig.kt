@@ -11,6 +11,8 @@ package com.vistring.trace.config
  * [matchAll]
  */
 open class VSMethodTraceInitConfig(
+    // 方法耗时阈值
+    var costTimeThreshold: Long? = null,
     // 是否开启方法耗时统计
     var enable: Boolean? = null,
     // 是否开启日志
@@ -28,6 +30,7 @@ open class VSMethodTraceInitConfig(
 )
 
 data class VSMethodTraceConfig(
+    val costTimeThreshold: Long,
     val enableLog: Boolean,
     val includePackagePrefixSet: Set<String>,
     val excludePackagePrefixSet: Set<String>,

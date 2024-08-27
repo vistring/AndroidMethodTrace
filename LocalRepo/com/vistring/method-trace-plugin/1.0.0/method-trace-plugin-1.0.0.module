@@ -29,11 +29,11 @@
         {
           "name": "method-trace-plugin-1.0.0.jar",
           "url": "method-trace-plugin-1.0.0.jar",
-          "size": 34363,
-          "sha512": "98cb454c871f9b6f09713390f19cf339f10105963a4d49eacb1ee0cf6559998e55d4ea538cf665f81a486a1a5acff97ee4e7a12f9725ab1439199a0264b5d846",
-          "sha256": "99628a7da30aa63f71a7d1721d785bd3aa429d48a64b28b42ac4951757d2b9fe",
-          "sha1": "5735579a224624eff6fa42ced89a5b1f266dffae",
-          "md5": "c1e546ebf22e017d0d5398f60eab7aa4"
+          "size": 36239,
+          "sha512": "6f4e676530e668de8da6bc706186e59c1ff533a727e506f000a40bc886fd1cd0ecbac6eed23e6d9c445c3fc6bd66d3b13612ee3b53092cc817244f18eab80b26",
+          "sha256": "056a0af464f58f6a49d81fe32d607d46ca673004a7a451342eb690c18a9d7fc2",
+          "sha1": "5ea94942b93bf05989a04e933de90a26426ccc51",
+          "md5": "ee3be03e6c810b53b747567778d7a076"
         }
       ]
     },
@@ -103,11 +103,11 @@
         {
           "name": "method-trace-plugin-1.0.0.jar",
           "url": "method-trace-plugin-1.0.0.jar",
-          "size": 34363,
-          "sha512": "98cb454c871f9b6f09713390f19cf339f10105963a4d49eacb1ee0cf6559998e55d4ea538cf665f81a486a1a5acff97ee4e7a12f9725ab1439199a0264b5d846",
-          "sha256": "99628a7da30aa63f71a7d1721d785bd3aa429d48a64b28b42ac4951757d2b9fe",
-          "sha1": "5735579a224624eff6fa42ced89a5b1f266dffae",
-          "md5": "c1e546ebf22e017d0d5398f60eab7aa4"
+          "size": 36239,
+          "sha512": "6f4e676530e668de8da6bc706186e59c1ff533a727e506f000a40bc886fd1cd0ecbac6eed23e6d9c445c3fc6bd66d3b13612ee3b53092cc817244f18eab80b26",
+          "sha256": "056a0af464f58f6a49d81fe32d607d46ca673004a7a451342eb690c18a9d7fc2",
+          "sha1": "5ea94942b93bf05989a04e933de90a26426ccc51",
+          "md5": "ee3be03e6c810b53b747567778d7a076"
         }
       ]
     },
@@ -123,11 +123,11 @@
         {
           "name": "method-trace-plugin-1.0.0-sources.jar",
           "url": "method-trace-plugin-1.0.0-sources.jar",
-          "size": 6528,
-          "sha512": "d2d7e187b5b951c7983193a919c327053a3216d766da1a505ebaded634e4259b99b486f2136f1ca4221f4a61c734f8e7b1c6d5c981f3683adcb811df822254cc",
-          "sha256": "a84e72dcdcc1d4a8a4a1d22bcad9dd9f61f43485a5d57c39e63cdfc30fedd589",
-          "sha1": "e062aa54377285cc1552e21ff747a66ff22bde7e",
-          "md5": "414b02de52492e423bf991e8fe91d065"
+          "size": 6895,
+          "sha512": "52de245c45fbe3591e0788d19aa69d662a29779b48e8bfd6e5c6b2c8f2de24967acba1a9389d4531cf41f4f824729dafd84ae94b12b4ad4f9de468ad88c5c3f6",
+          "sha256": "6e29bcd1e7bcc44b92c97f0c9fa77ef84b45a13bc5fc8123b968456f989f0b2e",
+          "sha1": "a3bd1c6ff832f4cf8d9789a39bb885cde3b041a6",
+          "md5": "9f90a2f14f858ad17e66d44c385860ca"
         }
       ]
     },
@@ -144,10 +144,10 @@
           "name": "method-trace-plugin-1.0.0-javadoc.jar",
           "url": "method-trace-plugin-1.0.0-javadoc.jar",
           "size": 261,
-          "sha512": "ca39e457567b05de3d6a3bb833836f2954baa87d4bb4b05841fb94e6a4c2aab430a3180e7a7db5d2dc978e051f25b64e4bb04a0105c7c74af80dfc602d5f4d06",
-          "sha256": "b78884f20569670a8084e5ace7020f7b36f8c457723b7ff129d2542551157f23",
-          "sha1": "a6bf347cc0e634ebfe6a2651f9fa52a4eb66ebb4",
-          "md5": "d69256422e18dac8bc22acdf6b928106"
+          "sha512": "19c8fdefa1b7a737f25b000991ee07d1143bfcd83ae73c1f44aeb855e932f6eeb122e505febfaf9ffb57dd5a7874e40346ca6b8603f77fe08b34f4f64c9be322",
+          "sha256": "85162aaf9a5869dbed8fafe14d69a3cc27b7aeef2eae06f3e199fdaf195859fd",
+          "sha1": "1027b345270b0c31925be51861c3716daa932abe",
+          "md5": "f12483877b37241abd6f20a1ce411110"
         }
       ]
     }

@@ -6,11 +6,11 @@ plugins {
 
 vsMethodTraceConfig {
     enableLog = true
+    costTimeThreshold = 1000
     /*includePackagePrefixSet = setOf(
         "com.vistring.trace.demo.view",
         "com.vistring.trace.demo.test",
     )*/
-    enableAdvancedMatch = true
     includePackagePatternSet = setOf(
         "com\\.vistring\\..*",
     )
