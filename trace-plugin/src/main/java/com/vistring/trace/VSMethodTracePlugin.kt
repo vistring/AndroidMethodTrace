@@ -67,7 +67,6 @@ class VSMethodTracePlugin : Plugin<Project> {
             // 路径匹配器
             val pathMatcher = PathMatcher(
                 enableLog = methodTraceConfig.enableLog,
-                enableAdvancedMatch = methodTraceConfig.enableAdvancedMatch,
                 includePackagePrefixSet = methodTraceConfig.includePackagePrefixSet,
                 excludePackagePrefixSet = methodTraceConfig.excludePackagePrefixSet,
                 includePackagePatternSet = methodTraceConfig.includePackagePatternSet,
@@ -241,8 +240,6 @@ class VSMethodTracePlugin : Plugin<Project> {
                                 EXT_METHOD_TRACE_CONFIG,
                                 VSMethodTraceConfig(
                                     enableLog = enableLog,
-                                    enableAdvancedMatch = vsMethodTraceConfig?.enableAdvancedMatch
-                                        ?: false,
                                     includePackagePrefixSet = vsMethodTraceConfig?.includePackagePrefixSet
                                         ?: emptySet(),
                                     excludePackagePrefixSet = vsMethodTraceConfig?.excludePackagePrefixSet

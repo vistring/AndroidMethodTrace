@@ -42,6 +42,10 @@ dependencies {
     implementation("com.joom.grip:grip:0.9.1")
     implementation("org.javassist:javassist:3.26.0-GA")
     implementation("com.github.gundy:semver4j:0.16.4")
+
+    // 引入 junit 依赖
+    testImplementation("junit:junit:4.13.2")
+
 }
 
 java {

@@ -3,14 +3,18 @@ package com.vistring.trace.config
 /**
  * Gradle 中的配置类
  * 这里必须写 open class, 不能用 data class, 否则在 Gradle 插件使用中会出错
+ * 下面几个参数都是可以混用的
+ * [includePackagePrefixSet]
+ * [excludePackagePrefixSet]
+ * [includePackagePatternSet]
+ * [excludePackagePatternSet]
+ * [matchAll]
  */
 open class VSMethodTraceInitConfig(
     // 是否开启方法耗时统计
     var enable: Boolean? = null,
     // 是否开启日志
     var enableLog: Boolean? = null,
-    // 是否开启高级匹配
-    var enableAdvancedMatch: Boolean? = null,
     // 包含的包名前缀
     var includePackagePrefixSet: Set<String>? = null,
     // 排除的包名前缀
@@ -25,7 +29,6 @@ open class VSMethodTraceInitConfig(
 
 data class VSMethodTraceConfig(
     val enableLog: Boolean,
-    val enableAdvancedMatch: Boolean,
     val includePackagePrefixSet: Set<String>,
     val excludePackagePrefixSet: Set<String>,
     val includePackagePatternSet: Set<String>,

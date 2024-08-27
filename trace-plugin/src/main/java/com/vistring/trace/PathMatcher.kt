@@ -5,12 +5,11 @@ package com.vistring.trace
  */
 class PathMatcher(
     val enableLog: Boolean = false,
-    val enableAdvancedMatch: Boolean,
-    val includePackagePrefixSet: Set<String>,
-    val excludePackagePrefixSet: Set<String>,
-    val includePackagePatternSet: Set<String>,
-    val excludePackagePatternSet: Set<String>,
-    val matchAll: Boolean,
+    val includePackagePrefixSet: Set<String> = emptySet(),
+    val excludePackagePrefixSet: Set<String> = emptySet(),
+    val includePackagePatternSet: Set<String> = emptySet(),
+    val excludePackagePatternSet: Set<String> = emptySet(),
+    val matchAll: Boolean = false,
 ) {
 
     private val includePackagePatternSetAdapter = includePackagePatternSet.map {
@@ -25,23 +24,25 @@ class PathMatcher(
      * @param className xxx.xxx.xxx
      */
     fun isMatch(className: String): Boolean {
-        return matchAll || if (enableAdvancedMatch) {
-            !excludePackagePatternSetAdapter.any { pattern ->
-                pattern.matcher(className).matches()
-            } && includePackagePatternSetAdapter.any { pattern ->
-                pattern.matcher(className).matches()
-            }
+        val isExcluded = excludePackagePatternSetAdapter.any { pattern ->
+            pattern.matcher(className).matches()
+        } || excludePackagePrefixSet.any {
+            className.startsWith(prefix = it)
+        }
+        val isIncluded = includePackagePatternSetAdapter.any { pattern ->
+            pattern.matcher(className).matches()
+        } || includePackagePrefixSet.any {
+            className.startsWith(prefix = it)
+        }
+        return if (matchAll) {
+            !isExcluded
         } else {
-            !excludePackagePrefixSet.any {
-                className.startsWith(prefix = it)
-            } && includePackagePrefixSet.any {
-                className.startsWith(prefix = it)
-            }
+            !isExcluded && isIncluded
         }
     }
 
     override fun toString(): String {
-        return "PathMatcher(enableLog=$enableLog, enableAdvancedMatch=$enableAdvancedMatch, includePackagePrefixSet=$includePackagePrefixSet, excludePackagePrefixSet=$excludePackagePrefixSet, includePackagePatternSet=$includePackagePatternSet, excludePackagePatternSet=$excludePackagePatternSet, includePackagePatternSetAdapter=$includePackagePatternSetAdapter, excludePackagePatternSetAdapter=$excludePackagePatternSetAdapter)"
+        return "PathMatcher(enableLog=$enableLog, includePackagePrefixSet=$includePackagePrefixSet, excludePackagePrefixSet=$excludePackagePrefixSet, includePackagePatternSet=$includePackagePatternSet, excludePackagePatternSet=$excludePackagePatternSet, includePackagePatternSetAdapter=$includePackagePatternSetAdapter, excludePackagePatternSetAdapter=$excludePackagePatternSetAdapter)"
     }
 
 
