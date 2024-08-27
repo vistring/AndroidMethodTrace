@@ -28,7 +28,9 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Button(
                         onClick = {
-                            TestDelay.testMethod2()
+                            runCatching {
+                                TestDelay.testMethod2()
+                            }
                         }
                     ) {
                         Text(text = "耗时测试")

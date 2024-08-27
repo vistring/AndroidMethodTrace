@@ -7,6 +7,7 @@ import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.commons.AdviceAdapter
 import java.io.InputStream
+import java.util.concurrent.atomic.AtomicInteger
 
 object AsmUtil {
 
@@ -16,6 +17,9 @@ object AsmUtil {
         // 这个会在 MethodTracker 的 start 方法中调用, 会导致死循环,
         "kotlin.jvm.internal.Intrinsics",
     )
+
+    // 方法唯一标记的 flag, 使用的时候需要先自增再获取
+    private val methodFlag = AtomicInteger()
 
     fun transform(
         enableLog: Boolean = false,
@@ -61,34 +65,45 @@ object AsmUtil {
                         if (access and Opcodes.ACC_ANNOTATION != 0) {
                             return originMethodVisitor
                         }
-                        return object :
-                            AdviceAdapter(asmApi, originMethodVisitor, access, name, descriptor) {
+                        // 拿到方法的唯一标识
+                        val methodFlag = methodFlag.incrementAndGet()
+                        return object : AdviceAdapter(
+                            asmApi,
+                            originMethodVisitor,
+                            access,
+                            name,
+                            descriptor,
+                        ) {
 
                             override fun onMethodEnter() {
                                 super.onMethodEnter()
+                                visitLdcInsn(methodFlag)
                                 visitLdcInsn("$className.$name")
                                 visitMethodInsn(
                                     Opcodes.INVOKESTATIC,
                                     "com/vistring/trace/MethodTracker",
                                     "start",
                                     // "()V",
-                                    "(Ljava/lang/String;)V",
+                                    "(ILjava/lang/String;)V",
                                     false,
                                 )
                             }
 
+                            // 同一个方法可能会多次被调用
                             override fun onMethodExit(opcode: Int) {
                                 super.onMethodExit(opcode)
+                                visitLdcInsn(methodFlag)
                                 visitLdcInsn("$className.$name")
                                 visitMethodInsn(
                                     Opcodes.INVOKESTATIC,
                                     "com/vistring/trace/MethodTracker",
                                     "end",
                                     // "()V",
-                                    "(Ljava/lang/String;)V",
+                                    "(ILjava/lang/String;)V",
                                     false,
                                 )
                             }
+
                         }
                     }
                 }
@@ -102,6 +117,10 @@ object AsmUtil {
         } else {
             originClassBytes
         }
+    }
+
+    fun resetMethodFlag() {
+        methodFlag.set(0)
     }
 
 }

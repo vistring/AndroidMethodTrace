@@ -130,6 +130,9 @@ class VSMethodTracePlugin : Plugin<Project> {
                 )
             )
 
+            // 重置方法标志
+            AsmUtil.resetMethodFlag()
+
             targetAllJars.forEach { file ->
                 val jarFile = JarFile(file.asFile)
                 jarFile.entries().iterator().forEach { jarEntry ->
