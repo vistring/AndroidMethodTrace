@@ -61,12 +61,12 @@ vsMethodTraceConfig {
 vsMethodTraceConfig 所有参数如下, 可自行配置：
 
 ```Kotlin
+// 方法耗时阈值
+var costTimeThreshold: Long? = null
 // 是否开启方法耗时统计
 var enable: Boolean? = null
 // 是否开启日志
 var enableLog: Boolean? = null
-// 是否开启高级匹配
-var enableAdvancedMatch: Boolean? = null
 // 包含的包名前缀
 var includePackagePrefixSet: Set<String>? = null
 // 排除的包名前缀
