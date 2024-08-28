@@ -3,7 +3,6 @@ package com.vistring.trace
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
-import org.objectweb.asm.FieldVisitor
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.commons.AdviceAdapter
@@ -53,18 +52,28 @@ object AsmUtil {
 
                 val classVisitor = object : ClassVisitor(ASM_API, classWriter) {
 
-                    override fun visitField(
+                    override fun visitMethod(
                         access: Int,
                         name: String?,
                         descriptor: String?,
                         signature: String?,
-                        value: Any?,
-                    ): FieldVisitor {
-                        return if ("COST_TIME_THRESHOLD" == name) {
-                            return super.visitField(access, name, descriptor, signature, costTimeThreshold)
-                        } else {
-                            super.visitField(access, name, descriptor, signature, value)
+                        exceptions: Array<out String>?
+                    ): MethodVisitor? {
+                        val originMethodVisitor =
+                            super.visitMethod(access, name, descriptor, signature, exceptions)
+                        if ("getCostTimeThread" == name) {
+                            return object : AdviceAdapter(
+                                ASM_API, originMethodVisitor,
+                                access, name, descriptor,
+                            ) {
+                                // 因为 getCostTimeThread 就一个这个指令
+                                // 把 值换成想要的
+                                override fun visitLdcInsn(value: Any?) {
+                                    super.visitLdcInsn(costTimeThreshold)
+                                }
+                            }
                         }
+                        return originMethodVisitor
                     }
 
                 }

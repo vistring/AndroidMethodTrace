@@ -7,7 +7,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath("com.vistring:method-trace-plugin:1.0.0")
+         classpath("com.vistring:method-trace-plugin:1.0.0")
     }
 }
 

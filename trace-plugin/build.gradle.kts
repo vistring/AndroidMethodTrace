@@ -32,6 +32,15 @@ java {
     jvmToolchain(JavaVersion.VERSION_17)
 }*/
 
+gradlePlugin {
+    plugins {
+        register("VSMethodTracePlugin") {
+            id = "com.vistring.trace.method.plugin"
+            implementationClass = "com.vistring.trace.VSMethodTracePlugin"
+        }
+    }
+}
+
 dependencies {
     implementation(gradleApi())
     implementation(localGroovy())
@@ -64,6 +73,7 @@ publishing {
     }
     repositories {
         maven {
+            name = "MethodTraceLocalRepo"
             url = uri("$rootDir/LocalRepo")
         }
     }
