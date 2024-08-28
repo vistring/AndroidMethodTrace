@@ -1,3 +1,2 @@
 install:
-  - echo "xxxxxxxxxxxxxxxxxxxxxxxxx"
   - ./gradlew clean -Pgroup=com.github.vistring -Pversion=$VERSION assemble :trace-plugin:publishToMavenLocal :trace:publishToMavenLocal
