@@ -1,4 +1,6 @@
 pluginManagement {
+    includeBuild("trace-plugin")
+
     repositories {
         google {
             content {
@@ -21,5 +23,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "VSMethodTrace"
 include(":app")
-include(":trace-plugin")
 include(":trace")
