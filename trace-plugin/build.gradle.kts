@@ -1,9 +1,7 @@
 import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util.archivesName
 
 plugins {
-    id("java-library")
-    alias(libs.plugins.jetbrains.kotlin.jvm)
-    id("org.gradle.kotlin.kotlin-dsl") version "4.0.6"
+    `kotlin-dsl`
     id("maven-publish")
 }
 
@@ -32,13 +30,9 @@ java {
     jvmToolchain(JavaVersion.VERSION_17)
 }*/
 
-gradlePlugin {
-    plugins {
-        register("VSMethodTracePlugin") {
-            id = "com.vistring.trace.method.plugin"
-            implementationClass = "com.vistring.trace.VSMethodTracePlugin"
-        }
-    }
+repositories {
+    google()
+    mavenCentral()
 }
 
 dependencies {
@@ -57,6 +51,15 @@ dependencies {
 
 }
 
+gradlePlugin {
+    plugins {
+        register("VSMethodTracePlugin") {
+            id = "com.vistring.trace.method.plugin"
+            implementationClass = "com.vistring.trace.VSMethodTracePlugin"
+        }
+    }
+}
+
 java {
     withSourcesJar()
     withJavadocJar()
@@ -71,10 +74,10 @@ publishing {
             from(components["java"])
         }
     }
-    repositories {
-        maven {
-            name = "MethodTraceLocalRepo"
-            url = uri("$rootDir/LocalRepo")
-        }
-    }
+//    repositories {
+//        maven {
+//            name = "temp"
+//            url = uri("$buildDir/LocalRepo")
+//        }
+//    }
 }

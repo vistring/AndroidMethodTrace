@@ -76,10 +76,5 @@ afterEvaluate {
                 version = version
             }
         }
-        repositories {
-            maven {
-                url = uri("$rootDir/LocalRepo")
-            }
-        }
     }
 }
