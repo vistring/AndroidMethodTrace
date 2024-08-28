@@ -28,11 +28,14 @@ object MethodTracker {
 
     private val methodStack = ThreadLocal<Stack<MethodInfo>>()
 
+
     /**
      * 耗时的时间判断, Gradle 插件配置的地方可以配置
+     * 不能写成常量, 因为编译优化会导致插桩不生效
      * [Long.MAX_VALUE] 表示不生效
      */
-    private const val COST_TIME_THRESHOLD = Long.MAX_VALUE
+    private val costTimeThread: Long
+        get() = Long.MAX_VALUE
 
     // 不是给用户调用的, 是给插件生成的代码调用的
     @JvmStatic
@@ -75,7 +78,7 @@ object MethodTracker {
                     this.subMethodTotalTime += methodCost + currentMethodInfo.subMethodTotalTime
                 }
                 if (currentMethodInfo.isMainThread &&
-                    (methodCost + currentMethodInfo.subMethodTotalUnReportTime) > COST_TIME_THRESHOLD
+                    (methodCost + currentMethodInfo.subMethodTotalUnReportTime) > costTimeThread
                 ) {
                     Log.d(
                         TAG,

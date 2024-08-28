@@ -53,7 +53,7 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        register("method-trace") {
+        register("VSMethodTracePlugin") {
             id = "com.vistring.trace.method.plugin"
             implementationClass = "com.vistring.trace.VSMethodTracePlugin"
         }
