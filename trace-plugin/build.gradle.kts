@@ -30,10 +30,10 @@ java {
     jvmToolchain(JavaVersion.VERSION_17)
 }*/
 
-repositories {
+/*repositories {
     google()
     mavenCentral()
-}
+}*/
 
 dependencies {
     implementation(gradleApi())

@@ -91,7 +91,7 @@ object AsmUtil {
             originClassBytes
         } else if (pathMatcher.isMatch(className = className)) {
             if (enableLog) {
-                println("$VSMethodTracePlugin transform successful: $className")
+                println("${VSMethodTracePlugin.TAG} transform successful: $className")
             }
             return kotlin.runCatching {
                 val classReader = ClassReader(

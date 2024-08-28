@@ -8,8 +8,9 @@ plugins {
 }
 
 // 通过 includeBuild 引入的 trace-plugin 作为独立的模块，默认并不会包含进来，需要手动添加
+/*
 tasks.register("publishToMavenLocal") {
     dependsOn(gradle.includedBuild("trace-plugin").task(":publishToMavenLocal"))
     dependsOn(subprojects.filter { it.tasks.findByName("publishToMavenLocal") != null }
         .map { it.tasks.named("publishToMavenLocal") })
-}
+}*/
