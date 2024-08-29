@@ -17,24 +17,6 @@ java {
     }
 }
 
-// 配置模块的 freeCompilerArgs 参数
-/*tasks.withType(KotlinCompile).configureEach {
-    kotlinOptions {
-        freeCompilerArgs += [
-                "-Xjvm-default=all",
-        ]
-    }
-}*/
-
-/*kotlin {
-    jvmToolchain(JavaVersion.VERSION_17)
-}*/
-
-repositories {
-    google()
-    mavenCentral()
-}
-
 dependencies {
     implementation(gradleApi())
     implementation(localGroovy())
@@ -74,10 +56,4 @@ publishing {
             from(components["java"])
         }
     }
-//    repositories {
-//        maven {
-//            name = "temp"
-//            url = uri("$buildDir/LocalRepo")
-//        }
-//    }
 }
