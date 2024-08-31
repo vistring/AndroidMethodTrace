@@ -50,6 +50,7 @@ plugins {
 }
 
 vsMethodTraceConfig {
+    costTimeThreshold = 80L
   	// 比如下面两个包名前缀的都会被统计到
     includePackagePrefixSet = setOf(
         "com.vistring.trace.demo.view",
@@ -80,7 +81,7 @@ var excludePackagePatternSet: Set<String>? = null
 > 添加 MethodTrace 的依赖库
 
 ```Kotlin
-implementation("com.github.vistring.AndroidMethodTrace:method-trace:<version>")
+debugImplementation("com.github.vistring.AndroidMethodTrace:method-trace:<version>")
 ```
 
 > 输出效果
