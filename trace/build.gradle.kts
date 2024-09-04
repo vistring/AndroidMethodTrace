@@ -51,6 +51,10 @@ dependencies {
     compileOnly(libs.androidx.annotation.jvm)
     // 引入 junit 依赖
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.mockito:mockito-core:4.8.1")
+    // https://mvnrepository.com/artifact/org.mockito.kotlin/mockito-kotlin
+    testImplementation("org.mockito.kotlin:mockito-kotlin:5.4.0")
+
 }
 
 tasks.register<Jar>("androidSourcesJar") {

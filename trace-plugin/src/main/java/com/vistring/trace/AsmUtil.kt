@@ -12,10 +12,11 @@ import java.util.concurrent.atomic.AtomicInteger
 object AsmUtil {
 
     private const val METHOD_TRACKER_CLASS_NAME = "com.vistring.trace.MethodTracker"
+    private const val METHOD_INFO_CLASS_NAME = "com.vistring.trace.MethodTracker.MethodInfo"
 
     private val CLASS_NAME_IGNORE_LIST = listOf(
         METHOD_TRACKER_CLASS_NAME,
-        "com.vistring.trace.MethodInfo",
+        METHOD_INFO_CLASS_NAME,
         // 这个会在 MethodTracker 的 start 方法中调用, 会导致死循环,
         "kotlin.jvm.internal.Intrinsics",
     )
