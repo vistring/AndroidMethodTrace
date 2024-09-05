@@ -3,9 +3,21 @@ package com.vistring.trace
 import android.os.Looper
 import android.util.Log
 import androidx.annotation.Keep
-import androidx.annotation.VisibleForTesting
+import java.util.LinkedList
 import java.util.Stack
 import kotlin.concurrent.getOrSet
+
+@Keep
+data class MethodTraceInfo(
+    val methodFlag: Int,
+    val methodName: String,
+    val isMainThread: Boolean,
+    var startTime: Long = 0,
+    // 修改发生在下一层的方法上
+    var subMethodTotalTime: Long = 0,
+    // 修改发生在下一层的方法上
+    var subMethodTotalUnReportTime: Long = 0,
+)
 
 /**
  * 方法耗时追踪
@@ -13,22 +25,12 @@ import kotlin.concurrent.getOrSet
 @Keep
 object MethodTracker {
 
-    @Keep
-    data class MethodInfo(
-        val methodFlag: Int,
-        val methodName: String,
-        val isMainThread: Boolean,
-        var startTime: Long = 0,
-        // 修改发生在下一层的方法上
-        var subMethodTotalTime: Long = 0,
-        // 修改发生在下一层的方法上
-        var subMethodTotalUnReportTime: Long = 0,
-    )
-
     private const val TAG = "VSMethodTracker"
 
-    @VisibleForTesting
-    private val methodStack = ThreadLocal<Stack<MethodInfo>>()
+    /**
+     * 其实这个地方需要用 [Stack], 但是用 [LinkedList] 更好
+     */
+    private val methodLinkedList = ThreadLocal<LinkedList<MethodTraceInfo>>()
 
     /**
      * 耗时的时间判断, Gradle 插件配置的地方可以配置
@@ -44,8 +46,8 @@ object MethodTracker {
         methodFlag: Int,
         name: String,
     ) {
-        methodStack.getOrSet { Stack<MethodInfo>() }.add(
-            MethodInfo(
+        methodLinkedList.getOrSet { LinkedList<MethodTraceInfo>() }.add(
+            MethodTraceInfo(
                 methodFlag = methodFlag,
                 methodName = name,
                 isMainThread = Looper.getMainLooper() == Looper.myLooper(),
@@ -65,14 +67,14 @@ object MethodTracker {
         methodFlag: Int,
         name: String,
     ) {
-        methodStack.get()?.let { stack ->
+        methodLinkedList.get()?.let { linkedList ->
             // 一直找, 直到找到对应的方法, 因为 end 方法可能不会被调用, 但是 start 一定会被调用
             // 所以当 end 方法调用的时候, 一定要去掉栈上面的其他方法
-            var currentMethodInfo = stack.pop()
+            var currentMethodInfo = linkedList.removeLast()
             while (currentMethodInfo.methodFlag != methodFlag) {
-                currentMethodInfo = stack.pop()
+                currentMethodInfo = linkedList.removeLast()
             }
-            val previousMethodInfo = if (stack.isEmpty()) null else stack.peek()
+            val previousMethodInfo = if (linkedList.isEmpty()) null else linkedList.last
             val currentTime = System.currentTimeMillis()
             // 方法总耗时
             val methodTotalCost = currentTime - currentMethodInfo.startTime
@@ -115,8 +117,8 @@ object MethodTracker {
     /**
      * 查看当前栈顶的方法信息
      */
-    fun peek(): MethodInfo? {
-        return methodStack.get()?.lastOrNull()
+    fun peek(): MethodTraceInfo? {
+        return methodLinkedList.get()?.lastOrNull()
     }
 
 }
