@@ -6,7 +6,7 @@ plugins {
 
 vsMethodTraceConfig {
     enableLog = true
-    costTimeThreshold = 60L
+    costTimeThreshold = 100L
     /*includePackagePrefixSet = setOf(
         "com.vistring.trace.demo.view",
         "com.vistring.trace.demo.test",

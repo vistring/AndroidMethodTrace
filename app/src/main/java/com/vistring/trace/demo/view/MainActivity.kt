@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
                     Button(
                         onClick = {
                             runCatching {
-                                TestDelay.testMethod()
+                                TestDelay.testRecursion()
                             }
                         }
                     ) {
