@@ -121,6 +121,7 @@ object AsmUtil {
                         }
                         // 拿到方法的唯一标识
                         val methodFlag = methodFlag.incrementAndGet()
+                        var isMethodExitByException = false
                         return object : AdviceAdapter(
                             ASM_API,
                             originMethodVisitor,
@@ -131,6 +132,7 @@ object AsmUtil {
 
                             override fun onMethodEnter() {
                                 super.onMethodEnter()
+                                isMethodExitByException = false
                                 visitLdcInsn(methodFlag)
                                 visitLdcInsn("$className.$name")
                                 visitMethodInsn(
@@ -143,19 +145,24 @@ object AsmUtil {
                                 )
                             }
 
-                            // 同一个方法可能会多次被调用
+                            // 屏蔽掉了多个 throw 的情况
                             override fun onMethodExit(opcode: Int) {
                                 super.onMethodExit(opcode)
-                                visitLdcInsn(methodFlag)
-                                visitLdcInsn("$className.$name")
-                                visitMethodInsn(
-                                    Opcodes.INVOKESTATIC,
-                                    "com/vistring/trace/MethodTracker",
-                                    "end",
-                                    // "()V",
-                                    "(ILjava/lang/String;)V",
-                                    false,
-                                )
+                                if (!isMethodExitByException) {
+                                    visitLdcInsn(methodFlag)
+                                    visitLdcInsn("$className.$name")
+                                    visitMethodInsn(
+                                        Opcodes.INVOKESTATIC,
+                                        "com/vistring/trace/MethodTracker",
+                                        "end",
+                                        // "()V",
+                                        "(ILjava/lang/String;)V",
+                                        false,
+                                    )
+                                }
+                                if(opcode == Opcodes.ATHROW) {
+                                    isMethodExitByException = true
+                                }
                             }
 
                         }
