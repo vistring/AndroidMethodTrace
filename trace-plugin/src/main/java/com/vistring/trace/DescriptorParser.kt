@@ -12,69 +12,58 @@ object DescriptorParser {
     const val LONG = "long"
     const val SHORT = "short"
     const val BOOLEAN = "boolean"
+    // 其他类型就是字符串本身, 比如：[I 或者 Ljava/lang/String
 
     // (Ljava/lang/String;I)V
+    // ([I)[I
     fun parseMethodDescriptor(descriptor: String): Pair<List<String>, String> {
-        val parameterTypes = mutableListOf<String>()
-        var currentType = ""
-        var index = 0
-        while (index < descriptor.length) {
-            when (descriptor[index]) {
-                '(' -> {
-                    index++
+        val leftParenthesisIndex = descriptor.indexOf('(')
+        val rightParenthesisIndex = descriptor.indexOf(')')
+        require(
+            value = leftParenthesisIndex != -1 && rightParenthesisIndex != -1 && leftParenthesisIndex < rightParenthesisIndex,
+        )
+        val parameterTypes = descriptor
+            .substring(leftParenthesisIndex + 1, rightParenthesisIndex)
+            .split(
+                ";",
+                ignoreCase = false,
+                limit = 0,
+            )
+            .map {
+                when {
+                    it == "B" -> BYTE
+                    it == "C" -> CHAR
+                    it == "D" -> DOUBLE
+                    it == "F" -> FLOAT
+                    it == "I" -> INT
+                    it == "J" -> LONG
+                    it == "S" -> SHORT
+                    it == "Z" -> BOOLEAN
+                    it.startsWith("L") -> it.substring(1)
+                    it.startsWith("[") -> it
+                    else -> error("Unknown type: $descriptor")
                 }
-                ')' -> break
-                'L' -> {
-                    val endIndex = descriptor.indexOf(';', index)
-                    currentType = descriptor.substring(index, endIndex)
-                    parameterTypes.add(currentType)
-                    index = endIndex + 1
-                }
-
-                'B', 'C', 'D', 'F', 'I', 'J', 'S', 'Z' -> {
-                    currentType = when (descriptor[index]) {
-                        'B' -> BYTE
-                        'C' -> CHAR
-                        'D' -> DOUBLE
-                        'F' -> FLOAT
-                        'I' -> INT
-                        'J' -> LONG
-                        'S' -> SHORT
-                        'Z' -> BOOLEAN
-                        else -> error("Unknown type")
-                    }
-                    parameterTypes.add(currentType)
-                    index++
-                }
-
-                else -> index++
             }
-        }
-        val returnTypeStartIndex = descriptor.indexOf(')') + 1
-        val returnType = if (returnTypeStartIndex < descriptor.length) {
-            when (descriptor[returnTypeStartIndex]) {
-                'V' -> VOID
-                'L' -> {
-                    val endIndex = descriptor.indexOf(';', returnTypeStartIndex)
-                    descriptor.substring(returnTypeStartIndex + 1, endIndex + 1)
+        val returnTypeStr = descriptor.substring(rightParenthesisIndex + 1).trim()
+        val returnType = when(returnTypeStr) {
+            "V" -> VOID
+            "B" -> BYTE
+            "C" -> CHAR
+            "D" -> DOUBLE
+            "F" -> FLOAT
+            "I" -> INT
+            "J" -> LONG
+            "S" -> SHORT
+            "Z" -> BOOLEAN
+            else -> {
+                if (returnTypeStr.startsWith("[")) {
+                    returnTypeStr
+                } else if (returnTypeStr.startsWith("L")) {
+                    returnTypeStr.substring(1)
+                } else {
+                    error("Unknown type: $descriptor")
                 }
-
-                'B', 'C', 'D', 'F', 'I', 'J', 'S', 'Z' -> when (descriptor[returnTypeStartIndex]) {
-                    'B' -> BYTE
-                    'C' -> CHAR
-                    'D' -> DOUBLE
-                    'F' -> FLOAT
-                    'I' -> INT
-                    'J' -> LONG
-                    'S' -> SHORT
-                    'Z' -> BOOLEAN
-                    else -> error("Unknown type")
-                }
-
-                else -> error("Unknown type")
             }
-        } else {
-            error("Unknown type")
         }
         return parameterTypes to returnType
     }
