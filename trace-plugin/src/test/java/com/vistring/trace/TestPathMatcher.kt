@@ -1,6 +1,6 @@
 package com.vistring.trace
 
-import org.junit.*
+import org.junit.Test
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -86,6 +86,16 @@ class TestPathMatcher {
                 className = "com.vistring.trace.demo.ttt"
             )
         )
+    }
+
+    @Test
+    fun test1() {
+        println(
+            DescriptorParser.parseMethodDescriptor(
+                descriptor = "(Ljava/lang/String;I)V",
+            )
+        )
+        assert(true)
     }
 
 }
