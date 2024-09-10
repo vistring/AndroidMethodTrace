@@ -29,7 +29,9 @@ dependencies {
     implementation("com.github.gundy:semver4j:0.16.4")
 
     // 引入 junit 依赖
-    testImplementation("junit:junit:4.13.2")
+    // testImplementation("junit:junit:4.13.2")
+    // 引入 junit5 依赖
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
 
 }
 

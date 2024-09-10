@@ -3,7 +3,17 @@ package com.vistring.trace.demo.test1
 
 class TestForInject {
 
-    private fun test0(): Int {
+    fun test11111(
+        name: String,
+        arr: IntArray,
+    ) {
+        test11111(
+            name = name,
+            arr = arr,
+        )
+    }
+
+    /*private fun test0(): Int {
         return 1
     }
 
@@ -15,10 +25,46 @@ class TestForInject {
         }
     }
 
-    /*fun test2(
+    fun test2(
         name: String, age: Int,
     ): String {
         return "name: $name, age: $age"
+    }
+
+    fun test3(
+        name: String, age: Int,
+    ): IntArray {
+        return intArrayOf(1,3,4)
+    }
+
+    fun test4(
+        name: String, age: Int,
+    ): Array<Int> {
+        return arrayOf(1,3,4)
+    }*/
+
+    // ([I)[I
+    fun test5(
+        arr: IntArray,
+    ): IntArray {
+        println(arr.last())
+        return arr
+    }
+
+    // ([I)[I
+    fun test55(
+        arr: IntArray,
+    ): IntArray {
+        return test5(
+            arr = arr,
+        )
+    }
+
+    // ([I)[I
+    /*fun test6(
+        arr: Array<IntArray>,
+    ): Array<IntArray> {
+        return arr
     }*/
 
 }

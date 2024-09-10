@@ -456,7 +456,8 @@ private class InstrumentationClassVisitor(
                 "<init>" != name &&
                 "<clinit>" != name &&
                 (access and Opcodes.ACC_NATIVE == 0) &&
-                (access and Opcodes.ACC_ANNOTATION == 0)
+                (access and Opcodes.ACC_ENUM == 0 &&
+                        access and Opcodes.ACC_ANNOTATION == 0)
 
         if (isLog) {
             println("isInject: $isInject")
@@ -721,7 +722,7 @@ object BytecodeInstrumentation {
 
             }.apply {
                 if (enableLog && this.isFailure) {
-                    println("$VSMethodTracePlugin transform fail: $dotClassName")
+                    println("$VSMethodTracePlugin transform $METHOD_TRACKER_CLASS_NAME fail: $dotClassName")
                 }
             }.getOrNull() ?: originClassBytes
         }
@@ -745,7 +746,7 @@ object BytecodeInstrumentation {
             }.apply {
                 if (enableLog && this.isFailure) {
                     println("$VSMethodTracePlugin transform fail: $dotClassName, ${this.exceptionOrNull()?.message}")
-                    // this.exceptionOrNull()?.printStackTrace()
+                    this.exceptionOrNull()?.printStackTrace()
                 }
             }.getOrNull() ?: originClassBytes
         } else {

@@ -1,6 +1,6 @@
 package com.vistring.trace
 
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -90,12 +90,13 @@ class TestPathMatcher {
 
     @Test
     fun test1() {
-        println(
-            DescriptorParser.parseMethodDescriptor(
+        assert(
+            (listOf(
+                "java/lang/String", DescriptorParser.INT,
+            ) to DescriptorParser.VOID) == DescriptorParser.parseMethodDescriptor(
                 descriptor = "(Ljava/lang/String;I)V",
             )
         )
-        assert(true)
     }
 
 }
