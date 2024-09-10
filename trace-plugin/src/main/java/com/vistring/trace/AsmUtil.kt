@@ -12,6 +12,7 @@ import org.objectweb.asm.TypePath
 import org.objectweb.asm.commons.AdviceAdapter
 import java.io.InputStream
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.max
 
 
 object AsmUtil {
@@ -31,6 +32,384 @@ object AsmUtil {
     // 方法唯一标记的 flag, 使用的时候需要先自增再获取
     private val methodFlag = AtomicInteger()
 
+    private fun MethodVisitor.createProxyMethod(
+        slashClassName: String,
+        dotClassName: String,
+        methodFirstLineNumber: Int?,
+        methodAccess: Int,
+        // 比如：(Ljava/lang/String;I)V
+        methodDescriptor: String,
+        methodFlag: Int,
+        methodName: String?,
+        nameForTrace: String
+    ) {
+
+        val isLog = false
+        val targetMethodVisitor = this
+        val isStaticMethod = (methodAccess and Opcodes.ACC_STATIC) != 0
+        // 比如：(Ljava/lang/String;I)V
+        // 解析出返回值字节码类型
+        val (parameterList, returnType) = DescriptorParser.parseMethodDescriptor(
+            descriptor = methodDescriptor,
+        ).apply {
+            if (isLog) {
+                println("parameterList: $first")
+                println("returnType: $second")
+            }
+        }
+
+        val hasReturn = returnType != DescriptorParser.VOID
+
+        // 初始的方法参数个数, 如果是 static 方法那就少一个
+        val initParameterCount =
+            parameterList.size + if (isStaticMethod) {
+                0
+            } else {
+                1
+            }
+
+        if (isLog) {
+            println("initParameterCount: $initParameterCount")
+        }
+
+        var maxStackCount = initParameterCount
+        // 如果有返回值
+        if (hasReturn) {
+            maxStackCount++
+        }
+
+        // 肯定有异常, 所以也要 ++
+        maxStackCount++
+
+        if (isLog) {
+            println("maxStackCount: $maxStackCount")
+        }
+
+        // 倒数两个用来存储返回值和异常
+
+        val returnValueStoreIndex = maxStackCount - 2
+        val exceptionValueStoreIndex = maxStackCount - 1
+
+        if (isLog) {
+            println("returnValueStoreIndex: $returnValueStoreIndex, exceptionValueStoreIndex: $exceptionValueStoreIndex")
+        }
+
+        targetMethodVisitor.visitCode()
+
+        // 真实的方法的调用的开始和结束
+        val realMethodLabelStart = Label()
+        val realMethodLabelEnd = Label()
+
+        // trace start 方法的开始和结束标签
+        val methodStartTraceStartLabel = Label()
+        val methodStartTraceEndLabel = Label()
+
+        // 没发生异常的时候的 end trace 的开始和结束
+        val methodEndTraceStartLabelNormal = Label()
+        val methodEndTraceEndLabelNormal = Label()
+
+        // 发生异常的时候的 end trace 的开始和结束
+        val methodEndTraceStartLabelException = Label()
+        val methodEndTraceEndLabelException = Label()
+
+        val catchLabel = Label()
+
+        val lastStartLabel = Label()
+
+        // 写入一个异常表
+        targetMethodVisitor.visitTryCatchBlock(
+            realMethodLabelStart,
+            realMethodLabelEnd,
+            catchLabel,
+            null,
+        )
+
+        // try 的代码
+        run {
+
+            // 调用 MethodTracker.start 方法
+            run {
+                targetMethodVisitor.visitLabel(
+                    methodStartTraceStartLabel
+                )
+                methodFirstLineNumber?.let { lineNumber ->
+                    targetMethodVisitor.visitLineNumber(
+                        max(
+                            a = 1,
+                            (lineNumber - 1),
+                        ),
+                        methodStartTraceStartLabel,
+                    )
+                }
+                targetMethodVisitor.visitLdcInsn(methodFlag)
+                targetMethodVisitor.visitLdcInsn("$dotClassName.$methodName")
+                targetMethodVisitor.visitMethodInsn(
+                    Opcodes.INVOKESTATIC,
+                    "com/vistring/trace/MethodTracker",
+                    "start",
+                    // "()V",
+                    "(ILjava/lang/String;)V",
+                    false,
+                )
+                targetMethodVisitor.visitLabel(methodStartTraceEndLabel)
+                targetMethodVisitor.visitInsn(Opcodes.NOP)
+            }
+
+            // 调用用户写的方法, 可能有返回值
+            run {
+                targetMethodVisitor.visitLabel(realMethodLabelStart)
+                if (!isStaticMethod) { // 如果不是静态方法, 就加载 this
+                    targetMethodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
+                }
+                val parameterIndexUses = if (isStaticMethod) {
+                    0
+                } else {
+                    1
+                }
+                parameterList.forEachIndexed { index, methodParameter ->
+                    when (methodParameter) {
+                        DescriptorParser.BYTE -> {
+                            targetMethodVisitor.visitVarInsn(
+                                Opcodes.ILOAD,
+                                index + parameterIndexUses
+                            )
+                        }
+
+                        DescriptorParser.CHAR -> {
+                            targetMethodVisitor.visitVarInsn(
+                                Opcodes.ILOAD,
+                                index + parameterIndexUses
+                            )
+                        }
+
+                        DescriptorParser.DOUBLE -> {
+                            targetMethodVisitor.visitVarInsn(
+                                Opcodes.DLOAD,
+                                index + parameterIndexUses
+                            )
+                        }
+
+                        DescriptorParser.FLOAT -> {
+                            targetMethodVisitor.visitVarInsn(
+                                Opcodes.FLOAD,
+                                index + parameterIndexUses
+                            )
+                        }
+
+                        DescriptorParser.INT -> {
+                            targetMethodVisitor.visitVarInsn(
+                                Opcodes.ILOAD,
+                                index + parameterIndexUses
+                            )
+                        }
+
+                        DescriptorParser.LONG -> {
+                            targetMethodVisitor.visitVarInsn(
+                                Opcodes.LLOAD,
+                                index + parameterIndexUses
+                            )
+                        }
+
+                        DescriptorParser.SHORT -> {
+                            targetMethodVisitor.visitVarInsn(
+                                Opcodes.ILOAD,
+                                index + parameterIndexUses
+                            )
+                        }
+
+                        DescriptorParser.BOOLEAN -> {
+                            targetMethodVisitor.visitVarInsn(
+                                Opcodes.ILOAD,
+                                index + parameterIndexUses
+                            )
+                        }
+
+                        else -> {
+                            targetMethodVisitor.visitVarInsn(
+                                Opcodes.ALOAD,
+                                index + parameterIndexUses
+                            )
+                        }
+                    }
+                }
+
+                if (isStaticMethod) {
+                    targetMethodVisitor.visitMethodInsn(
+                        Opcodes.INVOKESTATIC,
+                        slashClassName,
+                        nameForTrace,
+                        methodDescriptor,
+                        false
+                    )
+                } else {
+                    targetMethodVisitor.visitMethodInsn(
+                        Opcodes.INVOKEVIRTUAL,
+                        slashClassName,
+                        nameForTrace,
+                        methodDescriptor,
+                        false
+                    )
+                }
+
+                // 如果有返回值, 先存储返回值
+                if (hasReturn) {
+                    targetMethodVisitor.visitVarInsn(
+                        when (returnType) {
+                            DescriptorParser.BYTE -> Opcodes.ISTORE
+                            DescriptorParser.CHAR -> Opcodes.ISTORE
+                            DescriptorParser.DOUBLE -> Opcodes.DSTORE
+                            DescriptorParser.FLOAT -> Opcodes.FSTORE
+                            DescriptorParser.INT -> Opcodes.ISTORE
+                            DescriptorParser.LONG -> Opcodes.LSTORE
+                            DescriptorParser.SHORT -> Opcodes.ISTORE
+                            DescriptorParser.BOOLEAN -> Opcodes.ISTORE
+                            else -> Opcodes.ASTORE
+                        },
+                        returnValueStoreIndex,
+                    )
+                }
+                targetMethodVisitor.visitLabel(realMethodLabelEnd)
+                targetMethodVisitor.visitInsn(Opcodes.NOP)
+            }
+
+            // 调用 MethodTracker.end 方法
+            run {
+                targetMethodVisitor.visitLabel(
+                    methodEndTraceStartLabelNormal,
+                )
+                targetMethodVisitor.visitLdcInsn(methodFlag)
+                targetMethodVisitor.visitLdcInsn("$dotClassName.$methodName")
+                targetMethodVisitor.visitMethodInsn(
+                    Opcodes.INVOKESTATIC,
+                    "com/vistring/trace/MethodTracker",
+                    "end",
+                    // "()V",
+                    "(ILjava/lang/String;)V",
+                    false,
+                )
+                targetMethodVisitor.visitLabel(
+                    methodEndTraceEndLabelNormal
+                )
+                targetMethodVisitor.visitInsn(Opcodes.NOP)
+            }
+
+            // 表示临时表量表中的和进入方法的时候一样
+            targetMethodVisitor.visitFrame(
+                Opcodes.F_SAME,
+                0,
+                null,
+                0,
+                null,
+            )
+
+            // 如果没有返回值
+            if (hasReturn) {
+                // 加载出返回值
+                targetMethodVisitor.visitVarInsn(
+                    when (returnType) {
+                        DescriptorParser.BYTE -> Opcodes.ILOAD
+                        DescriptorParser.CHAR -> Opcodes.ILOAD
+                        DescriptorParser.DOUBLE -> Opcodes.DLOAD
+                        DescriptorParser.FLOAT -> Opcodes.FLOAD
+                        DescriptorParser.INT -> Opcodes.ILOAD
+                        DescriptorParser.LONG -> Opcodes.LLOAD
+                        DescriptorParser.SHORT -> Opcodes.ILOAD
+                        DescriptorParser.BOOLEAN -> Opcodes.ILOAD
+                        else -> Opcodes.ALOAD
+                    },
+                    returnValueStoreIndex,
+                )
+                when (returnType) {
+                    DescriptorParser.BYTE -> {
+                        targetMethodVisitor.visitInsn(Opcodes.IRETURN)
+                    }
+
+                    DescriptorParser.CHAR -> {
+                        targetMethodVisitor.visitInsn(Opcodes.IRETURN)
+                    }
+
+                    DescriptorParser.DOUBLE -> {
+                        targetMethodVisitor.visitInsn(Opcodes.DRETURN)
+                    }
+
+                    DescriptorParser.FLOAT -> {
+                        targetMethodVisitor.visitInsn(Opcodes.FRETURN)
+                    }
+
+                    DescriptorParser.INT -> {
+                        targetMethodVisitor.visitInsn(Opcodes.IRETURN)
+                    }
+
+                    DescriptorParser.LONG -> {
+                        targetMethodVisitor.visitInsn(Opcodes.LRETURN)
+                    }
+
+                    DescriptorParser.SHORT -> {
+                        targetMethodVisitor.visitInsn(Opcodes.IRETURN)
+                    }
+
+                    DescriptorParser.BOOLEAN -> {
+                        targetMethodVisitor.visitInsn(Opcodes.IRETURN)
+                    }
+
+                    else -> {
+                        targetMethodVisitor.visitInsn(Opcodes.ARETURN)
+                    }
+                }
+            } else {
+                targetMethodVisitor.visitInsn(Opcodes.RETURN)
+            }
+        }
+
+        // catch 相关的代码
+        run {
+            // 先把异常存起来
+            targetMethodVisitor.visitLabel(catchLabel)
+            targetMethodVisitor.visitVarInsn(
+                Opcodes.ASTORE,
+                exceptionValueStoreIndex,
+            )
+
+            // 调用 MethodTracker.end 方法
+            run {
+                targetMethodVisitor.visitLabel(
+                    methodEndTraceStartLabelException
+                )
+                targetMethodVisitor.visitLdcInsn(methodFlag)
+                targetMethodVisitor.visitLdcInsn("$dotClassName.$methodName")
+                targetMethodVisitor.visitMethodInsn(
+                    Opcodes.INVOKESTATIC,
+                    "com/vistring/trace/MethodTracker",
+                    "end",
+                    // "()V",
+                    "(ILjava/lang/String;)V",
+                    false,
+                )
+                targetMethodVisitor.visitLabel(
+                    methodEndTraceEndLabelException
+                )
+                targetMethodVisitor.visitInsn(Opcodes.NOP)
+            }
+
+            // 抛出异常
+            targetMethodVisitor.visitVarInsn(
+                Opcodes.ALOAD,
+                exceptionValueStoreIndex,
+            )
+            targetMethodVisitor.visitInsn(Opcodes.ATHROW)
+        }
+
+        targetMethodVisitor.visitLabel(lastStartLabel)
+        targetMethodVisitor.visitInsn(Opcodes.NOP)
+
+        targetMethodVisitor.visitMaxs(
+            initParameterCount
+                // 因为插桩最少需要两个数据卡槽, methodFlag 和 methodName
+                .coerceAtLeast(minimumValue = 2),
+            maxStackCount,
+        )
+    }
+
     fun transform(
         costTimeThreshold: Long,
         enableLog: Boolean = false,
@@ -43,14 +422,16 @@ object AsmUtil {
         // 原来 class 的字节数组
         val originClassBytes = classFileInputStream.readBytes()
 
-        val classNameOrigin = name
+        // xxx/xxx/xxx
+        val slashClassName = name
             .removeSuffix(suffix = ".class")
 
-        val className = classNameOrigin
+        // xxx.xxx.xxx
+        val dotClassName = slashClassName
             .replace("/", ".")
 
         // 如果是 tracker 类, 需要更改 COST_TIME_THRESHOLD 常量的值
-        if (METHOD_TRACKER_CLASS_NAME == className) {
+        if (METHOD_TRACKER_CLASS_NAME == dotClassName) {
             return kotlin.runCatching {
 
                 val classReader = ClassReader(
@@ -90,18 +471,18 @@ object AsmUtil {
 
             }.apply {
                 if (enableLog && this.isFailure) {
-                    println("$VSMethodTracePlugin transform fail: $className")
+                    println("$VSMethodTracePlugin transform fail: $dotClassName")
                 }
             }.getOrNull() ?: originClassBytes
         }
 
         // 此包下是 trace 耗时统计的模块, 不需要处理
-        return if (CLASS_NAME_IGNORE_LIST.any { it == className }) {
+        return if (CLASS_NAME_IGNORE_LIST.any { it == dotClassName }) {
             originClassBytes
-        } else if (pathMatcher.isMatch(className = className)) {
+        } else if (pathMatcher.isMatch(className = dotClassName)) {
             if (enableLog) {
                 println()
-                println("${VSMethodTracePlugin.TAG}: className ===================================== $className")
+                println("${VSMethodTracePlugin.TAG}: className ===================================== $dotClassName")
             }
             return kotlin.runCatching {
                 val classReader = ClassReader(
@@ -114,7 +495,7 @@ object AsmUtil {
 
                     override fun visitMethod(
                         access: Int,
-                        name: String?,
+                        name: String,
                         descriptor: String?,
                         signature: String?,
                         exceptions: Array<out String>?,
@@ -122,13 +503,11 @@ object AsmUtil {
 
                         /*val isLog =
                             className == "com.vistring.trace.demo.ui.theme.ThemeKt\$VSMethodTraceTheme\$1"*/
-                        val isLog = false
+                        val isLog = true
 
                         if (isLog) {
                             println("===================================== name = $name, descriptor = $descriptor")
                         }
-
-                        val isStaticMethod = (access and Opcodes.ACC_STATIC) != 0
 
                         val isInject = !descriptor.isNullOrBlank() &&
                                 "<init>" != name &&
@@ -154,6 +533,7 @@ object AsmUtil {
                             super.visitMethod(access, name, descriptor, signature, exceptions)
                         }
 
+                        // 代理原方法的 MethodVisitor
                         val proxyMethodVisitor = if (isInject) {
                             super.visitMethod(access, name, descriptor, signature, exceptions)
                         } else {
@@ -167,6 +547,9 @@ object AsmUtil {
                         // 拿到方法的唯一标识
                         val methodFlag = methodFlag.incrementAndGet()
                         return object : MethodVisitor(ASM_API, targetMethodVisitor) {
+
+                            private var isCalledVisitCode: Boolean = false
+                            private var firstLineNumber: Int? = null
 
                             override fun visitAnnotationDefault(): AnnotationVisitor {
                                 proxyMethodVisitor?.visitAnnotationDefault()
@@ -240,424 +623,53 @@ object AsmUtil {
                             }
 
                             override fun visitCode() {
-                                proxyMethodVisitor?.let { targetMethodVisitor ->
-                                    // 比如：(Ljava/lang/String;I)V
-                                    // 解析出返回值字节码类型
-                                    val (parameterList, returnType) = DescriptorParser.parseMethodDescriptor(
-                                        descriptor = descriptor,
-                                    ).apply {
-                                        if (isLog) {
-                                            println("parameterList: $first")
-                                            println("returnType: $second")
-                                        }
-                                    }
-
-                                    val hasReturn = returnType != DescriptorParser.VOID
-
-                                    // 初始的方法参数个数, 如果是 static 方法那就少一个
-                                    val initParameterCount =
-                                        parameterList.size + if (isStaticMethod) {
-                                            0
-                                        } else {
-                                            1
-                                        }
-
-                                    if (isLog) {
-                                        println("initParameterCount: $initParameterCount")
-                                    }
-
-                                    var maxStackCount = initParameterCount
-                                    // 如果有返回值
-                                    if (hasReturn) {
-                                        maxStackCount++
-                                    }
-
-                                    // 肯定有异常, 所以也要 ++
-                                    maxStackCount++
-
-                                    if (isLog) {
-                                        println("maxStackCount: $maxStackCount")
-                                    }
-
-                                    // 倒数两个用来存储返回值和异常
-
-                                    val returnValueStoreIndex = maxStackCount - 2
-                                    val exceptionValueStoreIndex = maxStackCount - 1
-
-                                    if (isLog) {
-                                        println("returnValueStoreIndex: $returnValueStoreIndex, exceptionValueStoreIndex: $exceptionValueStoreIndex")
-                                    }
-
-                                    targetMethodVisitor.visitCode()
-
-                                    // 真实的方法的调用的开始和结束
-                                    val realMethodLabelStart = Label()
-                                    val realMethodLabelEnd = Label()
-
-                                    // trace start 方法的开始和结束标签
-                                    val methodStartTraceStartLabel = Label()
-                                    val methodStartTraceEndLabel = Label()
-
-                                    // 没发生异常的时候的 end trace 的开始和结束
-                                    val methodEndTraceStartLabelNormal = Label()
-                                    val methodEndTraceEndLabelNormal = Label()
-
-                                    // 发生异常的时候的 end trace 的开始和结束
-                                    val methodEndTraceStartLabelException = Label()
-                                    val methodEndTraceEndLabelException = Label()
-
-                                    val catchLabel = Label()
-
-                                    val lastStartLabel = Label()
-
-                                    // 写入一个异常表
-                                    targetMethodVisitor.visitTryCatchBlock(
-                                        realMethodLabelStart,
-                                        realMethodLabelEnd,
-                                        catchLabel,
-                                        null,
-                                    )
-
-                                    // try 的代码
-                                    run {
-
-                                        // 调用 MethodTracker.start 方法
-                                        run {
-                                            targetMethodVisitor.visitLabel(
-                                                methodStartTraceStartLabel
-                                            )
-                                            targetMethodVisitor.visitLdcInsn(methodFlag)
-                                            targetMethodVisitor.visitLdcInsn("$className.$name")
-                                            targetMethodVisitor.visitMethodInsn(
-                                                Opcodes.INVOKESTATIC,
-                                                "com/vistring/trace/MethodTracker",
-                                                "start",
-                                                // "()V",
-                                                "(ILjava/lang/String;)V",
-                                                false,
-                                            )
-                                            targetMethodVisitor.visitLabel(methodStartTraceEndLabel)
-                                            targetMethodVisitor.visitInsn(Opcodes.NOP)
-                                        }
-
-                                        // 调用用户写的方法, 可能有返回值
-                                        run {
-                                            targetMethodVisitor.visitLabel(realMethodLabelStart)
-                                            if (!isStaticMethod) { // 如果不是静态方法, 就加载 this
-                                                targetMethodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
-                                            }
-                                            val parameterIndexUses = if (isStaticMethod) {
-                                                0
-                                            } else {
-                                                1
-                                            }
-                                            parameterList.forEachIndexed { index, methodParameter ->
-                                                when (methodParameter) {
-                                                    DescriptorParser.BYTE -> {
-                                                        targetMethodVisitor.visitVarInsn(
-                                                            Opcodes.ILOAD,
-                                                            index + parameterIndexUses
-                                                        )
-                                                    }
-
-                                                    DescriptorParser.CHAR -> {
-                                                        targetMethodVisitor.visitVarInsn(
-                                                            Opcodes.ILOAD,
-                                                            index + parameterIndexUses
-                                                        )
-                                                    }
-
-                                                    DescriptorParser.DOUBLE -> {
-                                                        targetMethodVisitor.visitVarInsn(
-                                                            Opcodes.DLOAD,
-                                                            index + parameterIndexUses
-                                                        )
-                                                    }
-
-                                                    DescriptorParser.FLOAT -> {
-                                                        targetMethodVisitor.visitVarInsn(
-                                                            Opcodes.FLOAD,
-                                                            index + parameterIndexUses
-                                                        )
-                                                    }
-
-                                                    DescriptorParser.INT -> {
-                                                        targetMethodVisitor.visitVarInsn(
-                                                            Opcodes.ILOAD,
-                                                            index + parameterIndexUses
-                                                        )
-                                                    }
-
-                                                    DescriptorParser.LONG -> {
-                                                        targetMethodVisitor.visitVarInsn(
-                                                            Opcodes.LLOAD,
-                                                            index + parameterIndexUses
-                                                        )
-                                                    }
-
-                                                    DescriptorParser.SHORT -> {
-                                                        targetMethodVisitor.visitVarInsn(
-                                                            Opcodes.ILOAD,
-                                                            index + parameterIndexUses
-                                                        )
-                                                    }
-
-                                                    DescriptorParser.BOOLEAN -> {
-                                                        targetMethodVisitor.visitVarInsn(
-                                                            Opcodes.ILOAD,
-                                                            index + parameterIndexUses
-                                                        )
-                                                    }
-
-                                                    else -> {
-                                                        targetMethodVisitor.visitVarInsn(
-                                                            Opcodes.ALOAD,
-                                                            index + parameterIndexUses
-                                                        )
-                                                    }
-                                                }
-                                            }
-
-                                            if (isStaticMethod) {
-                                                targetMethodVisitor.visitMethodInsn(
-                                                    Opcodes.INVOKESTATIC,
-                                                    classNameOrigin,
-                                                    nameForTrace,
-                                                    descriptor,
-                                                    false
-                                                )
-                                            } else {
-                                                targetMethodVisitor.visitMethodInsn(
-                                                    Opcodes.INVOKEVIRTUAL,
-                                                    classNameOrigin,
-                                                    nameForTrace,
-                                                    descriptor,
-                                                    false
-                                                )
-                                            }
-
-                                            // 如果有返回值, 先存储返回值
-                                            if (hasReturn) {
-                                                targetMethodVisitor.visitVarInsn(
-                                                    when(returnType) {
-                                                        DescriptorParser.BYTE -> Opcodes.ISTORE
-                                                        DescriptorParser.CHAR -> Opcodes.ISTORE
-                                                        DescriptorParser.DOUBLE -> Opcodes.DSTORE
-                                                        DescriptorParser.FLOAT -> Opcodes.FSTORE
-                                                        DescriptorParser.INT -> Opcodes.ISTORE
-                                                        DescriptorParser.LONG -> Opcodes.LSTORE
-                                                        DescriptorParser.SHORT -> Opcodes.ISTORE
-                                                        DescriptorParser.BOOLEAN -> Opcodes.ISTORE
-                                                        else -> Opcodes.ASTORE
-                                                    },
-                                                    returnValueStoreIndex,
-                                                )
-                                            }
-                                            targetMethodVisitor.visitLabel(realMethodLabelEnd)
-                                            targetMethodVisitor.visitInsn(Opcodes.NOP)
-                                        }
-
-                                        // 调用 MethodTracker.end 方法
-                                        run {
-                                            targetMethodVisitor.visitLabel(
-                                                methodEndTraceStartLabelNormal,
-                                            )
-                                            targetMethodVisitor.visitLdcInsn(methodFlag)
-                                            targetMethodVisitor.visitLdcInsn("$className.$name")
-                                            targetMethodVisitor.visitMethodInsn(
-                                                Opcodes.INVOKESTATIC,
-                                                "com/vistring/trace/MethodTracker",
-                                                "end",
-                                                // "()V",
-                                                "(ILjava/lang/String;)V",
-                                                false,
-                                            )
-                                            targetMethodVisitor.visitLabel(
-                                                methodEndTraceEndLabelNormal
-                                            )
-                                            targetMethodVisitor.visitInsn(Opcodes.NOP)
-                                        }
-
-                                        // 表示临时表量表中的和进入方法的时候一样
-                                        targetMethodVisitor.visitFrame(
-                                            Opcodes.F_SAME,
-                                            0,
-                                            null,
-                                            0,
-                                            null,
-                                        )
-
-                                        // 如果没有返回值
-                                        if (hasReturn) {
-                                            // 加载出返回值
-                                            targetMethodVisitor.visitVarInsn(
-                                                when(returnType) {
-                                                    DescriptorParser.BYTE -> Opcodes.ILOAD
-                                                    DescriptorParser.CHAR -> Opcodes.ILOAD
-                                                    DescriptorParser.DOUBLE -> Opcodes.DLOAD
-                                                    DescriptorParser.FLOAT -> Opcodes.FLOAD
-                                                    DescriptorParser.INT -> Opcodes.ILOAD
-                                                    DescriptorParser.LONG -> Opcodes.LLOAD
-                                                    DescriptorParser.SHORT -> Opcodes.ILOAD
-                                                    DescriptorParser.BOOLEAN -> Opcodes.ILOAD
-                                                    else -> Opcodes.ALOAD
-                                                },
-                                                returnValueStoreIndex,
-                                            )
-                                            when (returnType) {
-                                                DescriptorParser.BYTE -> {
-                                                    targetMethodVisitor.visitInsn(Opcodes.IRETURN)
-                                                }
-
-                                                DescriptorParser.CHAR -> {
-                                                    targetMethodVisitor.visitInsn(Opcodes.IRETURN)
-                                                }
-
-                                                DescriptorParser.DOUBLE -> {
-                                                    targetMethodVisitor.visitInsn(Opcodes.DRETURN)
-                                                }
-
-                                                DescriptorParser.FLOAT -> {
-                                                    targetMethodVisitor.visitInsn(Opcodes.FRETURN)
-                                                }
-
-                                                DescriptorParser.INT -> {
-                                                    targetMethodVisitor.visitInsn(Opcodes.IRETURN)
-                                                }
-
-                                                DescriptorParser.LONG -> {
-                                                    targetMethodVisitor.visitInsn(Opcodes.LRETURN)
-                                                }
-
-                                                DescriptorParser.SHORT -> {
-                                                    targetMethodVisitor.visitInsn(Opcodes.IRETURN)
-                                                }
-
-                                                DescriptorParser.BOOLEAN -> {
-                                                    targetMethodVisitor.visitInsn(Opcodes.IRETURN)
-                                                }
-
-                                                else -> {
-                                                    targetMethodVisitor.visitInsn(Opcodes.ARETURN)
-                                                }
-                                            }
-                                        } else {
-                                            targetMethodVisitor.visitInsn(Opcodes.RETURN)
-                                        }
-                                    }
-
-                                    // catch 相关的代码
-                                    run {
-                                        // 先把异常存起来
-                                        targetMethodVisitor.visitLabel(catchLabel)
-                                        targetMethodVisitor.visitVarInsn(
-                                            Opcodes.ASTORE,
-                                            exceptionValueStoreIndex,
-                                        )
-
-                                        // 调用 MethodTracker.end 方法
-                                        run {
-                                            targetMethodVisitor.visitLabel(
-                                                methodEndTraceStartLabelException
-                                            )
-                                            targetMethodVisitor.visitLdcInsn(methodFlag)
-                                            targetMethodVisitor.visitLdcInsn("$className.$name")
-                                            targetMethodVisitor.visitMethodInsn(
-                                                Opcodes.INVOKESTATIC,
-                                                "com/vistring/trace/MethodTracker",
-                                                "end",
-                                                // "()V",
-                                                "(ILjava/lang/String;)V",
-                                                false,
-                                            )
-                                            targetMethodVisitor.visitLabel(
-                                                methodEndTraceEndLabelException
-                                            )
-                                            targetMethodVisitor.visitInsn(Opcodes.NOP)
-                                        }
-
-                                        // 抛出异常
-                                        targetMethodVisitor.visitVarInsn(
-                                            Opcodes.ALOAD,
-                                            exceptionValueStoreIndex,
-                                        )
-                                        targetMethodVisitor.visitInsn(Opcodes.ATHROW)
-                                    }
-
-                                    targetMethodVisitor.visitLabel(lastStartLabel)
-                                    targetMethodVisitor.visitInsn(Opcodes.NOP)
-
-                                    targetMethodVisitor.visitMaxs(
-                                        initParameterCount
-                                            // 因为插桩最少需要两个数据卡槽, methodFlag 和 methodName
-                                            .coerceAtLeast(minimumValue = 2),
-                                        maxStackCount,
-                                    )
+                                if (isLog) {
+                                    println("visitCode called")
                                 }
                                 super.visitCode()
+                                isCalledVisitCode = true
                             }
 
                             override fun visitEnd() {
+                                if (isLog) {
+                                    println("visitEnd called")
+                                }
+                                proxyMethodVisitor?.createProxyMethod(
+                                    slashClassName = slashClassName,
+                                    dotClassName = dotClassName,
+                                    methodFirstLineNumber = firstLineNumber,
+                                    methodAccess = access,
+                                    methodDescriptor = descriptor,
+                                    methodFlag = methodFlag,
+                                    methodName = name,
+                                    nameForTrace = nameForTrace,
+                                )
                                 proxyMethodVisitor?.visitEnd()
                                 super.visitEnd()
+                                isCalledVisitCode = false
+                                firstLineNumber = null
+                            }
+
+                            override fun visitLineNumber(line: Int, start: Label) {
+                                if (isLog) {
+                                    println("visitLineNumber line: $line, start: $start")
+                                }
+                                if (isCalledVisitCode && firstLineNumber == null) {
+                                    firstLineNumber = line
+                                }
+                                super.visitLineNumber(line, start)
                             }
 
                         }
 
-                        /*return object : AdviceAdapter(
-                            ASM_API,
-                            targetMethodVisitor,
-                            access,
-                            name,
-                            descriptor,
-                        ) {
-
-                            override fun onMethodEnter() {
-                                super.onMethodEnter()
-                                *//*visitTryCatchBlock(
-                                    startLabel, endLabel, targetLabel, null,
-                                )
-                                isMethodExitByException = false
-                                visitLdcInsn(methodFlag)
-                                visitLdcInsn("$className.$name")
-                                visitMethodInsn(
-                                    Opcodes.INVOKESTATIC,
-                                    "com/vistring/trace/MethodTracker",
-                                    "start",
-                                    // "()V",
-                                    "(ILjava/lang/String;)V",
-                                    false,
-                                )*//*
-                            }
-
-                            // 屏蔽掉了多个 throw 的情况
-                            override fun onMethodExit(opcode: Int) {
-                                super.onMethodExit(opcode)
-                                *//*if (!isMethodExitByException) {
-                                    visitLdcInsn(methodFlag)
-                                    visitLdcInsn("$className.$name")
-                                    visitMethodInsn(
-                                        Opcodes.INVOKESTATIC,
-                                        "com/vistring/trace/MethodTracker",
-                                        "end",
-                                        // "()V",
-                                        "(ILjava/lang/String;)V",
-                                        false,
-                                    )
-                                }
-                                if(opcode == Opcodes.ATHROW) {
-                                    isMethodExitByException = true
-                                }*//*
-                            }
-
-                        }*/
                     }
+
                 }
                 classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
                 classWriter.toByteArray()
             }.apply {
                 if (enableLog && this.isFailure) {
-                    println("$VSMethodTracePlugin transform fail: $className, ${this.exceptionOrNull()?.message}")
+                    println("$VSMethodTracePlugin transform fail: $dotClassName, ${this.exceptionOrNull()?.message}")
                     this.exceptionOrNull()?.printStackTrace()
                 }
             }.getOrNull() ?: originClassBytes

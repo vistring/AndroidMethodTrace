@@ -10,7 +10,6 @@ import kotlin.concurrent.getOrSet
 
 @Keep
 data class MethodTraceInfo(
-    val methodHierarchy: Int,
     val methodFlag: Int,
     val methodName: String,
     val isMainThread: Boolean,
@@ -33,11 +32,6 @@ object MethodTracker {
      * 其实这个地方需要用 [Stack], 但是用 [LinkedList] 更好
      */
     private val methodLinkedList = ThreadLocal<LinkedList<MethodTraceInfo>>()
-
-    /**
-     * 方法层级计数器
-     */
-    private val methodHierarchyCounter = ThreadLocal<Int>()
 
     /**
      * 耗时的时间判断, Gradle 插件配置的地方可以配置
@@ -83,11 +77,8 @@ object MethodTracker {
         name: String,
     ) {
         methodLinkedList.getOrSet { LinkedList<MethodTraceInfo>() }.apply {
-            val methodHierarchy = methodHierarchyCounter.getOrSet { 0 } + 1
-            methodHierarchyCounter.set(methodHierarchy)
             this.add(
                 MethodTraceInfo(
-                    methodHierarchy = methodHierarchy,
                     methodFlag = methodFlag,
                     methodName = name,
                     isMainThread = Looper.getMainLooper() == Looper.myLooper(),
@@ -100,8 +91,27 @@ object MethodTracker {
     /**
      * 不是给用户调用的, 是给插件生成的代码调用的
      * 对一个方法插桩的时候, [start] 方法只会调用一次, 这个不用怀疑
-     * 但是 [end] 方法可能会调用 0 到 1 次!!!,
-     * [com.vistring.trace.AsmUtil] 中对多次 throw 的情况进行了处理, 只会让第一个 throw 调用 [end] 方法
+     * 但是 [end] 方法可能会调用 0 到 1 次!!!, 因为字节码插桩的方案是：
+     * 匹配到  return 和 throw 语句的时候, 就会插入 [end] 方法的调用, 如果异常没有捕获, 那么就不会调用 [end] 方法
+     *
+     * =========================================================
+     *
+     * 从 9.10 开始, 字节码插桩的方案进行了大升级, 保证了 start 和 end 方法的调用是成双成对出现的.
+     * [com.vistring.trace.AsmUtil] 对要插桩的方法进行了重命名, 然后原来的方法中进行统一的 try finally 处理, 保证了 end 方法的调用
+     * ```Kotlin
+     * private final void sleep10$forTrace() {
+     *    Thread.sleep(10L)
+     * }
+     *
+     * private final void sleep10() {
+     *    MethodTracker.start(24, "com.vistring.trace.demo.test.TestDelay.sleep10")
+     *    try {
+     *        this.sleep10$forTrace()
+     *    } finally {
+     *        MethodTracker.end(24, "com.vistring.trace.demo.test.TestDelay.sleep10")
+     *    }
+     * }
+     * ```
      * 虽然可能导致一些方法的耗时统计不准确, 但是不会导致崩溃, 也不会影响其他方法的耗时统计
      */
     @JvmStatic // 主要是为了字节码那边能够比较方便的调用到
@@ -110,15 +120,7 @@ object MethodTracker {
         name: String,
     ) {
         methodLinkedList.get()?.let { linkedList ->
-            // 一直找, 直到找到对应的方法, 因为 end 方法可能不会被调用, 但是 start 一定会被调用
-            // 所以当 end 方法调用的时候, 一定要去掉栈上面的其他方法
-            var currentMethodInfo: MethodTraceInfo?
-            do {
-                currentMethodInfo = linkedList.removeLastOrNull()
-            } while (currentMethodInfo != null && currentMethodInfo.methodFlag != methodFlag)
-            if (currentMethodInfo == null) {
-                return
-            }
+            val currentMethodInfo = linkedList.removeLast()
             val currentTime = System.currentTimeMillis()
             // 方法总耗时
             val methodTotalCost = currentTime - currentMethodInfo.startTime
