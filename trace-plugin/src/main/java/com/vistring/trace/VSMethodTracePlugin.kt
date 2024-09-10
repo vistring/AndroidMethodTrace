@@ -130,7 +130,7 @@ class VSMethodTracePlugin : Plugin<Project> {
             )
 
             // 重置方法标志
-            AsmUtil.resetMethodFlag()
+            BytecodeInstrumentation.resetMethodFlag()
 
             targetAllJars.forEach { file ->
                 val jarFile = JarFile(file.asFile)
@@ -147,7 +147,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                         } else {
                             jarOutput.write(
                                 jarFile.getInputStream(jarEntry).use { classFileInputStream ->
-                                    AsmUtil.transform(
+                                    BytecodeInstrumentation.tryInstrument(
                                         costTimeThreshold = methodTraceConfig.costTimeThreshold,
                                         enableLog = methodTraceConfig.enableLog,
                                         pathMatcher = pathMatcher,
@@ -184,7 +184,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                         )
                         jarOutput.write(
                             file.inputStream().use { classFileInputStream ->
-                                AsmUtil.transform(
+                                BytecodeInstrumentation.tryInstrument(
                                     costTimeThreshold = methodTraceConfig.costTimeThreshold,
                                     enableLog = methodTraceConfig.enableLog,
                                     pathMatcher = pathMatcher,
