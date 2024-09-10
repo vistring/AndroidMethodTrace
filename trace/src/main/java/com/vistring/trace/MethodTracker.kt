@@ -14,7 +14,7 @@ data class MethodTraceInfo(
     val methodFlag: Int,
     val methodName: String,
     val isMainThread: Boolean,
-    var startTime: Long = 0,
+    val startTime: Long = 0,
     // sub 方法的总耗时, 包括了被追踪报告的和未被追踪报告的
     var subMethodTotalTime: Long = 0,
     // sub 方法的未被追踪报告的总耗时

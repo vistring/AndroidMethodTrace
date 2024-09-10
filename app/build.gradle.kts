@@ -8,11 +8,10 @@ vsMethodTraceConfig {
     enableLog = true
     costTimeThreshold = 100L
     /*includePackagePrefixSet = setOf(
-        "com.vistring.trace.demo.view",
-        "com.vistring.trace.demo.test",
+        "com.vistring.trace.demo.test1",
     )*/
     includePackagePatternSet = setOf(
-        "com\\.vistring\\..*",
+        "com\\.vistring\\.trace\\.demo\\.test1\\..*",
     )
 }
 
