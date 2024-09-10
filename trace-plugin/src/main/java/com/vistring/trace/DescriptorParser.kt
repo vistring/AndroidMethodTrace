@@ -1,5 +1,6 @@
 package com.vistring.trace
 
+// TODO: 这里的算法有问题
 object DescriptorParser {
 
     const val VOID = "void"
