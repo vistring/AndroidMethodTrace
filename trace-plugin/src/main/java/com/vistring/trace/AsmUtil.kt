@@ -122,7 +122,7 @@ object AsmUtil {
 
                         /*val isLog =
                             className == "com.vistring.trace.demo.ui.theme.ThemeKt\$VSMethodTraceTheme\$1"*/
-                        val isLog = true
+                        val isLog = false
 
                         if (isLog) {
                             println("===================================== name = $name, descriptor = $descriptor")
@@ -290,9 +290,11 @@ object AsmUtil {
 
                                     targetMethodVisitor.visitCode()
 
+                                    // 真实的方法的调用的开始和结束
                                     val realMethodLabelStart = Label()
                                     val realMethodLabelEnd = Label()
 
+                                    // trace start 方法的开始和结束标签
                                     val methodStartTraceStartLabel = Label()
                                     val methodStartTraceEndLabel = Label()
 
@@ -437,12 +439,22 @@ object AsmUtil {
                                             // 如果有返回值, 先存储返回值
                                             if (hasReturn) {
                                                 targetMethodVisitor.visitVarInsn(
-                                                    Opcodes.ASTORE,
+                                                    when(returnType) {
+                                                        DescriptorParser.BYTE -> Opcodes.ISTORE
+                                                        DescriptorParser.CHAR -> Opcodes.ISTORE
+                                                        DescriptorParser.DOUBLE -> Opcodes.DSTORE
+                                                        DescriptorParser.FLOAT -> Opcodes.FSTORE
+                                                        DescriptorParser.INT -> Opcodes.ISTORE
+                                                        DescriptorParser.LONG -> Opcodes.LSTORE
+                                                        DescriptorParser.SHORT -> Opcodes.ISTORE
+                                                        DescriptorParser.BOOLEAN -> Opcodes.ISTORE
+                                                        else -> Opcodes.ASTORE
+                                                    },
                                                     returnValueStoreIndex,
                                                 )
                                             }
-                                            /*targetMethodVisitor.visitLabel(realMethodLabelEnd)
-                                            targetMethodVisitor.visitInsn(Opcodes.NOP)*/
+                                            targetMethodVisitor.visitLabel(realMethodLabelEnd)
+                                            targetMethodVisitor.visitInsn(Opcodes.NOP)
                                         }
 
                                         // 调用 MethodTracker.end 方法
@@ -467,19 +479,29 @@ object AsmUtil {
                                         }
 
                                         // 表示临时表量表中的和进入方法的时候一样
-                                        /*targetMethodVisitor.visitFrame(
+                                        targetMethodVisitor.visitFrame(
                                             Opcodes.F_SAME,
                                             0,
                                             null,
                                             0,
                                             null,
-                                        )*/
+                                        )
 
                                         // 如果没有返回值
                                         if (hasReturn) {
                                             // 加载出返回值
                                             targetMethodVisitor.visitVarInsn(
-                                                Opcodes.ALOAD,
+                                                when(returnType) {
+                                                    DescriptorParser.BYTE -> Opcodes.ILOAD
+                                                    DescriptorParser.CHAR -> Opcodes.ILOAD
+                                                    DescriptorParser.DOUBLE -> Opcodes.DLOAD
+                                                    DescriptorParser.FLOAT -> Opcodes.FLOAD
+                                                    DescriptorParser.INT -> Opcodes.ILOAD
+                                                    DescriptorParser.LONG -> Opcodes.LLOAD
+                                                    DescriptorParser.SHORT -> Opcodes.ILOAD
+                                                    DescriptorParser.BOOLEAN -> Opcodes.ILOAD
+                                                    else -> Opcodes.ALOAD
+                                                },
                                                 returnValueStoreIndex,
                                             )
                                             when (returnType) {
@@ -553,14 +575,13 @@ object AsmUtil {
                                             )
                                             targetMethodVisitor.visitInsn(Opcodes.NOP)
                                         }
+
                                         // 抛出异常
-                                        run {
-                                            targetMethodVisitor.visitVarInsn(
-                                                Opcodes.ALOAD,
-                                                exceptionValueStoreIndex,
-                                            )
-                                            targetMethodVisitor.visitInsn(Opcodes.ATHROW)
-                                        }
+                                        targetMethodVisitor.visitVarInsn(
+                                            Opcodes.ALOAD,
+                                            exceptionValueStoreIndex,
+                                        )
+                                        targetMethodVisitor.visitInsn(Opcodes.ATHROW)
                                     }
 
                                     targetMethodVisitor.visitLabel(lastStartLabel)
@@ -637,6 +658,7 @@ object AsmUtil {
             }.apply {
                 if (enableLog && this.isFailure) {
                     println("$VSMethodTracePlugin transform fail: $className, ${this.exceptionOrNull()?.message}")
+                    this.exceptionOrNull()?.printStackTrace()
                 }
             }.getOrNull() ?: originClassBytes
         } else {

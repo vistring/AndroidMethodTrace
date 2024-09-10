@@ -29,11 +29,20 @@ class MainActivity : ComponentActivity() {
                     Button(
                         onClick = {
                             runCatching {
+                                TestDelay.testTryCatchMethod()
+                            }
+                        }
+                    ) {
+                        Text(text = "耗时测试1")
+                    }
+                    Button(
+                        onClick = {
+                            runCatching {
                                 TestDelay.testRecursion()
                             }
                         }
                     ) {
-                        Text(text = "耗时测试")
+                        Text(text = "耗时测试2")
                     }
                 }
             }
