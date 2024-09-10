@@ -10,11 +10,11 @@ vsMethodTraceConfig {
     /*includePackagePrefixSet = setOf(
         "com.vistring.trace.demo.test1",
     )*/
-    includePackagePatternSet = setOf(
+    /*includePackagePatternSet = setOf(
         "com\\.vistring\\.trace\\.demo\\.test1\\..*",
         // "com\\.vistring\\..*",
-    )
-    // matchAll = true
+    )*/
+    matchAll = true
 }
 
 android {

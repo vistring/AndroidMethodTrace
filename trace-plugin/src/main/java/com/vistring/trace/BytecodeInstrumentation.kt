@@ -438,6 +438,17 @@ private class InstrumentationClassVisitor(
 ) : ClassVisitor(asmApi, classVisitor) // 占位
 {
 
+    override fun visit(
+        version: Int,
+        access: Int,
+        name: String?,
+        signature: String?,
+        superName: String?,
+        interfaces: Array<out String>?
+    ) {
+        super.visit(version, access, name, signature, superName, interfaces)
+    }
+
     override fun visitMethod(
         access: Int,
         name: String,
@@ -456,8 +467,8 @@ private class InstrumentationClassVisitor(
                 "<init>" != name &&
                 "<clinit>" != name &&
                 (access and Opcodes.ACC_NATIVE == 0) &&
-                (access and Opcodes.ACC_ENUM == 0 &&
-                        access and Opcodes.ACC_ANNOTATION == 0)
+                (access and Opcodes.ACC_ABSTRACT == 0) &&
+                (access and Opcodes.ACC_ANNOTATION == 0)
 
         if (isLog) {
             println("isInject: $isInject")
