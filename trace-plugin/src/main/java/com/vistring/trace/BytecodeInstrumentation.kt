@@ -1,16 +1,15 @@
 package com.vistring.trace
 
-import org.objectweb.asm.AnnotationVisitor
-import org.objectweb.asm.Attribute
+import com.vistring.trace.RenameForTraceClassVisitor.Companion.RENAME_FOR_SUFFIX
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
 import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
-import org.objectweb.asm.TypePath
 import org.objectweb.asm.commons.AdviceAdapter
 import java.io.InputStream
+import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 
@@ -27,6 +26,7 @@ import kotlin.math.max
  * }
  */
 private fun MethodVisitor.createProxyMethod(
+    enableLog: Boolean,
     slashClassName: String,
     dotClassName: String,
     methodFirstLineNumber: Int?,
@@ -38,7 +38,8 @@ private fun MethodVisitor.createProxyMethod(
     nameForTrace: String
 ) {
 
-    val isLog = false
+    val enableDetailLog = enableLog && false
+
     val targetMethodVisitor = this
     val isStaticMethod = (methodAccess and Opcodes.ACC_STATIC) != 0
     // 比如：(Ljava/lang/String;I)V
@@ -46,7 +47,10 @@ private fun MethodVisitor.createProxyMethod(
     val (parameterList, returnType) = DescriptorParser.parseMethodDescriptor(
         descriptor = methodDescriptor,
     ).apply {
-        if (isLog) {
+        if (enableDetailLog) {
+            println(
+                "createProxyMethod -----> $slashClassName.$methodName, methodDescriptor: $methodDescriptor"
+            )
             println("parameterList: $first")
             println("returnType: $second")
         }
@@ -59,18 +63,26 @@ private fun MethodVisitor.createProxyMethod(
     val instrumentationMethodParameterCount = 2
 
     // 初始的方法参数个数, 如果是 static 方法那就少一个
-    val initParameterCount =
-        parameterList.size + if (isStaticMethod) {
-            0
-        } else {
-            1
-        }
+    val initStackCount = parameterList.map {
+        when (it) {
+            DescriptorParser.LONG, DescriptorParser.DOUBLE -> {
+                2
+            }
 
-    if (isLog) {
-        println("initParameterCount: $initParameterCount")
+            else -> 1
+        }
+    }.sum() + if (isStaticMethod) {
+        0
+    } else {
+        1
     }
 
-    var maxStackCount = initParameterCount
+    if (enableDetailLog) {
+        println("initStackCount: $initStackCount")
+    }
+
+    var maxStackCount = initStackCount
+
     // 如果有返回值
     if (hasReturn) {
         maxStackCount++
@@ -79,7 +91,7 @@ private fun MethodVisitor.createProxyMethod(
     // 因为我这里有 try catch, 肯定有异常的处理, 所以也要 ++
     maxStackCount++
 
-    if (isLog) {
+    if (enableDetailLog) {
         println("maxStackCount: $maxStackCount")
     }
 
@@ -88,7 +100,7 @@ private fun MethodVisitor.createProxyMethod(
     val returnValueStoreIndex = maxStackCount - 2
     val exceptionValueStoreIndex = maxStackCount - 1
 
-    if (isLog) {
+    if (enableDetailLog) {
         println("returnValueStoreIndex: $returnValueStoreIndex, exceptionValueStoreIndex: $exceptionValueStoreIndex")
     }
 
@@ -159,73 +171,78 @@ private fun MethodVisitor.createProxyMethod(
             if (!isStaticMethod) { // 如果不是静态方法, 就加载 this
                 targetMethodVisitor.visitVarInsn(Opcodes.ALOAD, 0)
             }
+            // 如果不是静态的会被用掉一个用来存储 this
             val parameterIndexUses = if (isStaticMethod) {
                 0
             } else {
                 1
             }
+            // 在循环的过程中, 因为 Long 和 Double 需要占用两个数据卡槽, 所以需要一个偏移量
+            var indexOffset = 0
             parameterList.forEachIndexed { index, methodParameter ->
                 when (methodParameter) {
                     DescriptorParser.BYTE -> {
                         targetMethodVisitor.visitVarInsn(
                             Opcodes.ILOAD,
-                            index + parameterIndexUses
+                            index + parameterIndexUses + indexOffset
                         )
                     }
 
                     DescriptorParser.CHAR -> {
                         targetMethodVisitor.visitVarInsn(
                             Opcodes.ILOAD,
-                            index + parameterIndexUses
+                            index + parameterIndexUses + indexOffset
                         )
                     }
 
                     DescriptorParser.DOUBLE -> {
                         targetMethodVisitor.visitVarInsn(
                             Opcodes.DLOAD,
-                            index + parameterIndexUses
+                            index + parameterIndexUses + indexOffset
                         )
+                        indexOffset++
                     }
 
                     DescriptorParser.FLOAT -> {
                         targetMethodVisitor.visitVarInsn(
                             Opcodes.FLOAD,
-                            index + parameterIndexUses
+                            index + parameterIndexUses + indexOffset
                         )
                     }
 
                     DescriptorParser.INT -> {
                         targetMethodVisitor.visitVarInsn(
                             Opcodes.ILOAD,
-                            index + parameterIndexUses
+                            index + parameterIndexUses + indexOffset
                         )
                     }
 
                     DescriptorParser.LONG -> {
                         targetMethodVisitor.visitVarInsn(
                             Opcodes.LLOAD,
-                            index + parameterIndexUses
+                            index + parameterIndexUses + indexOffset
                         )
+                        indexOffset++
                     }
 
                     DescriptorParser.SHORT -> {
                         targetMethodVisitor.visitVarInsn(
                             Opcodes.ILOAD,
-                            index + parameterIndexUses
+                            index + parameterIndexUses + indexOffset
                         )
                     }
 
                     DescriptorParser.BOOLEAN -> {
                         targetMethodVisitor.visitVarInsn(
                             Opcodes.ILOAD,
-                            index + parameterIndexUses
+                            index + parameterIndexUses + indexOffset
                         )
                     }
 
                     else -> {
                         targetMethodVisitor.visitVarInsn(
                             Opcodes.ALOAD,
-                            index + parameterIndexUses
+                            index + parameterIndexUses + indexOffset
                         )
                     }
                 }
@@ -400,12 +417,22 @@ private fun MethodVisitor.createProxyMethod(
     targetMethodVisitor.visitLabel(lastStartLabel)
     targetMethodVisitor.visitInsn(Opcodes.NOP)
 
+    val finalMaxStack = initStackCount
+        // 因为插桩最少需要两个数据卡槽, methodFlag 和 methodName
+        // methodFlag 是 int 是 1 个数据卡槽, methodName 是 String 是 1 个数据卡槽
+        .coerceAtLeast(minimumValue = instrumentationMethodParameterCount)
+    val maxLocals = maxStackCount
+
+    if (enableDetailLog) {
+        println("finalMaxStack: $finalMaxStack, maxLocals: $maxLocals")
+        println()
+    }
+
     targetMethodVisitor.visitMaxs(
-        initParameterCount
-            // 因为插桩最少需要两个数据卡槽, methodFlag 和 methodName
-            .coerceAtLeast(minimumValue = instrumentationMethodParameterCount),
-        maxStackCount,
+        finalMaxStack,
+        maxLocals,
     )
+
 }
 
 /**
@@ -430,13 +457,17 @@ private fun MethodVisitor.createProxyMethod(
  * ```
  */
 private class InstrumentationClassVisitor(
-    asmApi: Int,
-    classVisitor: ClassVisitor,
+    val asmApi: Int,
+    val nextClassVisitor: ClassVisitor,
+    val enableLog: Boolean,
     val slashClassName: String,
     val dotClassName: String,
-    val methodFlag: Int,
-) : ClassVisitor(asmApi, classVisitor) // 占位
+    val methodFlagCounter: AtomicInteger,
+    val instrumentSuccessfulMethodList: MutableMap<String, Int>,
+) : ClassVisitor(asmApi, nextClassVisitor) // 占位
 {
+
+    private var isInterface: Boolean = false
 
     override fun visit(
         version: Int,
@@ -446,6 +477,7 @@ private class InstrumentationClassVisitor(
         superName: String?,
         interfaces: Array<out String>?
     ) {
+        isInterface = access and Opcodes.ACC_INTERFACE != 0
         super.visit(version, access, name, signature, superName, interfaces)
     }
 
@@ -455,29 +487,169 @@ private class InstrumentationClassVisitor(
         descriptor: String?,
         signature: String?,
         exceptions: Array<out String>?,
-    ): MethodVisitor {
+    ): MethodVisitor? {
 
-        val isLog = false
+        var enableDetailLog = enableLog && false
 
-        if (isLog) {
-            println("===================================== name = $name, descriptor = $descriptor")
-        }
-
-        val isInject = !descriptor.isNullOrBlank() &&
+        // 是否可以插桩
+        val canInstrument = !isInterface &&
+                !descriptor.isNullOrBlank() &&
                 "<init>" != name &&
                 "<clinit>" != name &&
                 (access and Opcodes.ACC_NATIVE == 0) &&
                 (access and Opcodes.ACC_ABSTRACT == 0) &&
                 (access and Opcodes.ACC_ANNOTATION == 0)
 
-        if (isLog) {
-            println("isInject: $isInject")
+        if (enableDetailLog) {
+            println("InstrumentationClassVisitor.visitMethod -----> $slashClassName.$name, canInstrument: $canInstrument")
         }
 
-        val nameForTrace = "$name\$forTrace"
+        return if (canInstrument) {
+            val methodFlag = methodFlagCounter.incrementAndGet()
+            val nameForTrace = "$name$RENAME_FOR_SUFFIX$methodFlag"
+            val proxyMethodVisitor = nextClassVisitor.visitMethod(
+                access,
+                name,
+                descriptor,
+                signature,
+                exceptions,
+            )
+            return object : MethodVisitor(asmApi, proxyMethodVisitor) {
 
-        val targetMethodVisitor = if (isInject) {
-            super.visitMethod(
+                private var isCalledVisitCode: Boolean = false
+                private var firstLineNumber: Int? = null
+
+                override fun visitLineNumber(line: Int, start: Label) {
+                    if (isCalledVisitCode && firstLineNumber == null) {
+                        firstLineNumber = line
+                    }
+                    super.visitLineNumber(line, start)
+                }
+
+                override fun visitCode() {
+                    mv = null
+                    // visitCode 压着不调用先.
+                    super.visitCode()
+                    isCalledVisitCode = true
+                }
+
+                override fun visitEnd() {
+
+                    proxyMethodVisitor.visitCode()
+                    proxyMethodVisitor.createProxyMethod(
+                        enableLog = enableDetailLog,
+                        slashClassName = slashClassName,
+                        dotClassName = dotClassName,
+                        methodFirstLineNumber = firstLineNumber,
+                        methodAccess = access,
+                        methodDescriptor = descriptor!!,
+                        methodFlag = methodFlag,
+                        methodName = name,
+                        nameForTrace = nameForTrace,
+                    )
+                    mv = proxyMethodVisitor
+                    // proxyMethodVisitor.visitEnd()
+                    super.visitEnd()
+                    isCalledVisitCode = false
+                    firstLineNumber = null
+                    // 记录插桩成功的方法信息
+                    instrumentSuccessfulMethodList["${slashClassName}.$name<$descriptor>"] = methodFlag
+                }
+
+            }
+        } else {
+            super.visitMethod(access, name, descriptor, signature, exceptions)
+        }
+
+    }
+
+}
+
+/**
+ * [instrumentSuccessfulMethodSet] 中记录的方法都是需要 Rename 的
+ * 假设有一个类, 实际做的是输出 123
+ * ```Kotlin
+ * class Test {
+ *    fun test1() {
+ *      println("123")
+ *    }
+ * }
+ * ```
+ * 在插桩后, 会变成下面的插桩后的代码. 那此时真实的 test1 方法已经被修改.
+ * ```Kotlin
+ * class Test {
+ *    fun test1() {
+ *      try {
+ *          MethodTracker.start()
+ *          // 这里是真实的方法, 会被重命名
+ *          this.test1$forTrace()
+ *      } finally {
+ *          MethodTracker.end()
+ *      }
+ *    }
+ * }
+ * ```
+ * 所以需要重新读取 class 文件, 对原有方法进行一个重命名, 加上 [RenameForTraceClassVisitor.RENAME_FOR_SUFFIX] 后缀
+ * 这样子操作之后, 最后生成的代码就是下面这样子的. 会多出一个 xxx$forTrace 方法是本身待插桩方法的实现
+ * ```Kotlin
+ * class Test {
+ *    fun test1() {
+ *      try {
+ *          MethodTracker.start()
+ *          // 这里是真实的方法, 会被重命名
+ *          this.test1$forTrace()
+ *      } finally {
+ *          MethodTracker.end()
+ *      }
+ *    }
+ *    fun test1$forTrace() {
+ *      println("123")
+ *    }
+ * }
+ * ```
+ */
+private class RenameForTraceClassVisitor(
+    val asmApi: Int,
+    val nextClassVisitor: ClassVisitor,
+    val enableLog: Boolean,
+    val slashClassName: String,
+    val instrumentSuccessfulMethodSet: Map<String, Int>,
+) : ClassVisitor(asmApi) // 占位
+{
+
+    companion object {
+        const val RENAME_FOR_SUFFIX = "\$forTrace"
+    }
+
+    override fun visitMethod(
+        access: Int,
+        name: String,
+        descriptor: String?,
+        signature: String?,
+        exceptions: Array<out String>?,
+    ): MethodVisitor? {
+
+        val enableDetailLog = enableLog && false
+
+        if (enableDetailLog) {
+            println("RenameForTraceClassVisitor.visitMethod, name = $name, descriptor = $descriptor")
+        }
+
+        val methodFlag = instrumentSuccessfulMethodSet["${slashClassName}.$name<$descriptor>"]
+
+        // 是否可以插桩
+        val canInstrument = methodFlag != null
+
+        val nameForTrace = "$name$RENAME_FOR_SUFFIX$methodFlag"
+
+        if (enableDetailLog) {
+            if (canInstrument) {
+                println("RenameForTraceClassVisitor.needRename: $name ----> $nameForTrace")
+            }
+        }
+
+        return if (canInstrument) {
+            nextClassVisitor.visitMethod(
                 access,
                 nameForTrace,
                 descriptor,
@@ -485,134 +657,7 @@ private class InstrumentationClassVisitor(
                 exceptions
             )
         } else {
-            super.visitMethod(access, name, descriptor, signature, exceptions)
-        }
-
-        // 代理原方法的 MethodVisitor
-        val proxyMethodVisitor = if (isInject) {
-            super.visitMethod(access, name, descriptor, signature, exceptions)
-        } else {
             null
-        }
-
-        if (descriptor.isNullOrBlank()) {
-            return targetMethodVisitor
-        }
-
-        return object : MethodVisitor(api, targetMethodVisitor) {
-
-            private var isCalledVisitCode: Boolean = false
-            private var firstLineNumber: Int? = null
-
-            override fun visitAnnotationDefault(): AnnotationVisitor {
-                proxyMethodVisitor?.visitAnnotationDefault()
-                return super.visitAnnotationDefault()
-            }
-
-            override fun visitAnnotation(
-                descriptor: String?,
-                visible: Boolean
-            ): AnnotationVisitor {
-                proxyMethodVisitor?.visitAnnotation(descriptor, visible)
-                return super.visitAnnotation(descriptor, visible)
-            }
-
-            override fun visitParameterAnnotation(
-                parameter: Int,
-                descriptor: String?,
-                visible: Boolean
-            ): AnnotationVisitor {
-                proxyMethodVisitor?.visitParameterAnnotation(
-                    parameter,
-                    descriptor,
-                    visible
-                )
-                return super.visitParameterAnnotation(
-                    parameter,
-                    descriptor,
-                    visible
-                )
-            }
-
-            override fun visitAnnotableParameterCount(
-                parameterCount: Int,
-                visible: Boolean
-            ) {
-                proxyMethodVisitor?.visitAnnotableParameterCount(
-                    parameterCount,
-                    visible
-                )
-                super.visitAnnotableParameterCount(parameterCount, visible)
-            }
-
-            override fun visitTypeAnnotation(
-                typeRef: Int,
-                typePath: TypePath?,
-                descriptor: String?,
-                visible: Boolean
-            ): AnnotationVisitor {
-                proxyMethodVisitor?.visitTypeAnnotation(
-                    typeRef,
-                    typePath,
-                    descriptor,
-                    visible
-                )
-                return super.visitTypeAnnotation(
-                    typeRef,
-                    typePath,
-                    descriptor,
-                    visible
-                )
-            }
-
-            override fun visitParameter(name: String?, access: Int) {
-                proxyMethodVisitor?.visitParameter(name, access)
-                super.visitParameter(name, access)
-            }
-
-            override fun visitAttribute(attribute: Attribute?) {
-                proxyMethodVisitor?.visitAttribute(attribute)
-                super.visitAttribute(attribute)
-            }
-
-            override fun visitCode() {
-                if (isLog) {
-                    println("visitCode called")
-                }
-                super.visitCode()
-                isCalledVisitCode = true
-            }
-
-            override fun visitEnd() {
-                if (isLog) {
-                    println("visitEnd called")
-                }
-                proxyMethodVisitor?.createProxyMethod(
-                    slashClassName = slashClassName,
-                    dotClassName = dotClassName,
-                    methodFirstLineNumber = firstLineNumber,
-                    methodAccess = access,
-                    methodDescriptor = descriptor,
-                    methodFlag = methodFlag,
-                    methodName = name,
-                    nameForTrace = nameForTrace,
-                )
-                proxyMethodVisitor?.visitEnd()
-                super.visitEnd()
-                isCalledVisitCode = false
-                firstLineNumber = null
-            }
-
-            override fun visitLineNumber(line: Int, start: Label) {
-                if (isLog) {
-                    println("visitLineNumber line: $line, start: $start")
-                }
-                if (isCalledVisitCode && firstLineNumber == null) {
-                    firstLineNumber = line
-                }
-                super.visitLineNumber(line, start)
-            }
-
         }
 
     }
@@ -627,25 +672,50 @@ private class InstrumentationClassVisitor(
 @Throws(Exception::class)
 private fun transformClassBytecode(
     asmApi: Int,
+    enableLog: Boolean,
     originClassBytes: ByteArray,
+    // xxx/xxx/xxx
     slashClassName: String,
+    // xxx.xxx.xxx
     dotClassName: String,
-    methodFlag: Int,
+    methodFlagCounter: AtomicInteger,
 ): ByteArray {
-    val classReader = ClassReader(
+    // 最原始的字节码
+    val originClassReader = ClassReader(
         originClassBytes,
     )
-    val classWriter =
+    val outputClassWriter =
         ClassWriter(ClassWriter.COMPUTE_MAXS or ClassWriter.COMPUTE_FRAMES)
-    val classVisitor = InstrumentationClassVisitor(
+
+    // xxx/xxx/xxx.(IIJ)V --> 123
+    // key 成功插桩的方法信息, value 是方法唯一标记
+    val instrumentSuccessfulMethodList = mutableMapOf<String, Int>()
+
+    // 尝试方法插桩的方法
+    val instrumentationClassVisitor = InstrumentationClassVisitor(
         asmApi = asmApi,
-        classVisitor = classWriter,
+        nextClassVisitor = outputClassWriter,
+        enableLog = enableLog,
         slashClassName = slashClassName,
         dotClassName = dotClassName,
-        methodFlag = methodFlag,
+        methodFlagCounter = methodFlagCounter,
+        instrumentSuccessfulMethodList = instrumentSuccessfulMethodList,
     )
-    classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
-    return classWriter.toByteArray()
+    originClassReader.accept(instrumentationClassVisitor, ClassReader.EXPAND_FRAMES)
+
+    // println("instrumentSuccessfulMethodList = ${instrumentSuccessfulMethodList.joinToString(separator = "\n")}")
+
+    // 把一些支持插桩的方法, 改成 xxx$forTrace 的方法
+    val renameForTraceClassVisitor = RenameForTraceClassVisitor(
+        asmApi = asmApi,
+        enableLog = enableLog,
+        nextClassVisitor = outputClassWriter,
+        slashClassName = slashClassName,
+        instrumentSuccessfulMethodSet = Collections.unmodifiableMap(instrumentSuccessfulMethodList),
+    )
+    originClassReader.accept(renameForTraceClassVisitor, ClassReader.EXPAND_FRAMES)
+
+    return outputClassWriter.toByteArray()
 }
 
 /**
@@ -677,15 +747,23 @@ object BytecodeInstrumentation {
         enableLog: Boolean = false,
         pathMatcher: PathMatcher,
         // xxx/xxx/xxx.class
-        name: String,
+        classFullName: String,
         classFileInputStream: InputStream,
     ): ByteArray {
 
         // 原来 class 的字节数组
         val originClassBytes = classFileInputStream.readBytes()
 
+        /*if (true) {
+            return originClassBytes
+        }*/
+
+        /*if ("com/vistring/trace/demo/test1/TestJava.class" != classFullName) {
+            return originClassBytes
+        }*/
+
         // xxx/xxx/xxx
-        val slashClassName = name
+        val slashClassName = classFullName
             .removeSuffix(suffix = ".class")
 
         // xxx.xxx.xxx
@@ -744,20 +822,21 @@ object BytecodeInstrumentation {
         } else if (pathMatcher.isMatch(className = dotClassName)) {
             if (enableLog) {
                 println()
-                println("${VSMethodTracePlugin.TAG}: className ===================================== $dotClassName")
+                println("${VSMethodTracePlugin.TAG}: transformClassBytecode start ===================================== $dotClassName")
             }
-            return kotlin.runCatching {
+            kotlin.runCatching {
                 transformClassBytecode(
                     asmApi = ASM_API,
+                    enableLog = enableLog,
                     originClassBytes = originClassBytes,
                     slashClassName = slashClassName,
                     dotClassName = dotClassName,
-                    methodFlag = methodFlagCounter.incrementAndGet(),
+                    methodFlagCounter = methodFlagCounter,
                 )
             }.apply {
                 if (enableLog && this.isFailure) {
                     println("$VSMethodTracePlugin transform fail: $dotClassName, ${this.exceptionOrNull()?.message}")
-                    this.exceptionOrNull()?.printStackTrace()
+                    // this.exceptionOrNull()?.printStackTrace()
                 }
             }.getOrNull() ?: originClassBytes
         } else {
