@@ -3,15 +3,13 @@ package com.vistring.trace.demo.test1
 
 class TestForInject {
 
-    fun test11111(
+    /*fun test11111(
         name: String,
         arr: IntArray,
-    ) {
-        test11111(
-            name = name,
-            arr = arr,
-        )
-    }
+        arr1: Array<String>,
+    ): Array<Array<Pair<String, Int>>> {
+        TODO()
+    }*/
 
     /*private fun test0(): Int {
         return 1

@@ -151,7 +151,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                                         costTimeThreshold = methodTraceConfig.costTimeThreshold,
                                         enableLog = methodTraceConfig.enableLog,
                                         pathMatcher = pathMatcher,
-                                        name = jarEntry.name,
+                                        classFullName = jarEntry.name,
                                         classFileInputStream = classFileInputStream,
                                     )
                                 }
@@ -188,7 +188,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                                     costTimeThreshold = methodTraceConfig.costTimeThreshold,
                                     enableLog = methodTraceConfig.enableLog,
                                     pathMatcher = pathMatcher,
-                                    name = relativePath,
+                                    classFullName = relativePath,
                                     classFileInputStream = classFileInputStream,
                                 )
                             }

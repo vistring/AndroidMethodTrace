@@ -8,12 +8,16 @@ vsMethodTraceConfig {
     enableLog = true
     costTimeThreshold = 100L
     /*includePackagePrefixSet = setOf(
-        "com.vistring.trace.demo.test1",
+        "com.vistring.",
     )*/
     /*includePackagePatternSet = setOf(
         "com\\.vistring\\.trace\\.demo\\.test1\\..*",
         // "com\\.vistring\\..*",
     )*/
+    excludePackagePrefixSet = setOf(
+        // "kotlin",
+        // "androidx",
+    )
     matchAll = true
 }
 
