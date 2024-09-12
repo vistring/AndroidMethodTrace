@@ -5,7 +5,7 @@ plugins {
 }
 
 vsMethodTraceConfig {
-    enableLog = true
+    enableLog = false
     costTimeThreshold = 100L
     excludePackagePrefixSet = setOf(
         "androidx.",
