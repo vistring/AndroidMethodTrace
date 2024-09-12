@@ -11,8 +11,8 @@ https://www.jitpack.io/#vistring/AndroidMethodTrace
 ```Grovvy
 buildscript {
   repositories {
-  	// ...
-  	maven { url 'https://www.jitpack.io' }
+    // ...
+    maven { url 'https://www.jitpack.io' }
   }
 }
 ```
@@ -49,15 +49,16 @@ plugins {
     id("com.vistring.trace.method.plugin")
 }
 
-// 一份
+// 配置插件. 建议使用白名单机制, 例如下面的
 vsMethodTraceConfig {
+		// 配置耗时阈值
     costTimeThreshold = 80L
-  	// 比如下面两个包名前缀的都会被统计到
+    // 比如下面两个包名前缀的都会被统计到
     /*includePackagePrefixSet = setOf(
         "com.vistring.trace.demo.view",
         "com.vistring.trace.demo.test",
     )*/
-    // 比如排除掉这个包名前缀的都不会被统计到
+    // 比如排除掉所有被下面注解标记的方法
     /*excludeMethodAnnoSet = setOf(
         "androidx.annotation.MainThread",
     )*/
@@ -67,6 +68,9 @@ vsMethodTraceConfig {
 vsMethodTraceConfig 所有参数如下, 可自行配置：
 
 ```Kotlin
+// 匹配全部, 默认为 false 如果开启此配置. 
+// 请一定要阅读文档最后建议排除的一些包名和一些方法
+var matchAll: Boolean? = null,
 // 方法耗时阈值
 var costTimeThreshold: Long? = null
 // 是否开启方法耗时统计
@@ -99,6 +103,28 @@ var excludeMethodAnnoPatternSet: Set<String>? = null
 
 ```Kotlin
 debugImplementation("com.github.vistring.AndroidMethodTrace:method-trace:<version>")
+```
+
+> 如果配置了 matchAll, 建议包含以下配置.
+
+```Kotlin
+vsMethodTraceConfig {
+		// ......
+    excludePackagePrefixSet = setOf(
+        "kotlin.",
+        "kotlinx.",
+        "android.",
+        "androidx.",
+        "com.google.",
+      	// 如果还有其他的请提 issue 告诉我
+    )
+    excludeMethodAnnoPrefixSet = setOf(
+    		// 这个一定要配置. 否则对 @FromJson 的方法插桩会有运行错误
+      	// 如果还有其他的请提 issue 告诉我
+        "com.squareup.moshi",
+    )
+    // ......
+}
 ```
 
 > 输出效果

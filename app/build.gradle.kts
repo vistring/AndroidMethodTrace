@@ -8,10 +8,15 @@ vsMethodTraceConfig {
     enableLog = false
     costTimeThreshold = 100L
     excludePackagePrefixSet = setOf(
+        "kotlin.",
+        "kotlinx.",
+        "android.",
         "androidx.",
+        "com.google.",
     )
     excludeMethodAnnoSet = setOf(
-        "androidx.annotation.MainThread",
+        // 这个一定要配置. 否则对 @FromJson 的方法插桩会有运行错误
+        "com.squareup.moshi",
     )
     // 匹配全部
     matchAll = true

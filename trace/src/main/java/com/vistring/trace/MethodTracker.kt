@@ -50,7 +50,7 @@ object MethodTracker {
     ) {
         Log.d(
             TAG,
-            "methodFlag = $methodFlag, methodCost = $methodCost, methodTotalCost = $methodTotalCost",
+            "methodFlag = $methodFlag, methodTotalCost = $methodTotalCost, methodCost = $methodCost",
         )
         var isPrint = false
         Thread
