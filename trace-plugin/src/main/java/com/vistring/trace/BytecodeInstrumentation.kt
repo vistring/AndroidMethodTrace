@@ -802,13 +802,9 @@ object BytecodeInstrumentation {
         // 原来 class 的字节数组
         val originClassBytes = classFileInputStream.readBytes()
 
-        /*if (true) {
+        /*if ("xxx/xxx/xxx.class" != classFullName) {
             return originClassBytes
         }*/
-
-        if ("com/vistring/trace/demo/test1/TestJava.class" != classFullName) {
-            return originClassBytes
-        }
 
         // xxx/xxx/xxx
         val slashClassName = classFullName
