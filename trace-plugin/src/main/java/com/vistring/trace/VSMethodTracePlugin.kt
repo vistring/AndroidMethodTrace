@@ -64,17 +64,31 @@ class VSMethodTracePlugin : Plugin<Project> {
         @TaskAction
         fun taskAction() {
 
-            // 路径匹配器
-            val pathMatcher = PathMatcher(
+            val classPathMatcher = PathMatcher(
                 enableLog = methodTraceConfig.enableLog,
-                includePackagePrefixSet = methodTraceConfig.includePackagePrefixSet,
-                excludePackagePrefixSet = methodTraceConfig.excludePackagePrefixSet,
-                includePackagePatternSet = methodTraceConfig.includePackagePatternSet,
-                excludePackagePatternSet = methodTraceConfig.excludePackagePatternSet,
+                includePrefixSet = methodTraceConfig.includePackagePrefixSet,
+                excludePrefixSet = methodTraceConfig.excludePackagePrefixSet,
+                includePatternSet = methodTraceConfig.includePackagePatternSet,
+                excludePatternSet = methodTraceConfig.excludePackagePatternSet,
                 matchAll = methodTraceConfig.matchAll,
             ).apply {
                 if (methodTraceConfig.enableLog) {
-                    println("pathMatcher: $this")
+                    println("classPathMatcher: $this")
+                }
+            }
+
+            val methodAnnoPathMatcher = PathMatcher(
+                enableLog = methodTraceConfig.enableLog,
+                includeSet = methodTraceConfig.includeMethodAnnoSet,
+                excludeSet = methodTraceConfig.excludeMethodAnnoSet,
+                includePrefixSet = methodTraceConfig.includeMethodAnnoPrefixSet,
+                excludePrefixSet = methodTraceConfig.excludeMethodAnnoPrefixSet,
+                includePatternSet = methodTraceConfig.includeMethodAnnoPatternSet,
+                excludePatternSet = methodTraceConfig.excludeMethodAnnoPatternSet,
+                matchAll = methodTraceConfig.matchAll,
+            ).apply {
+                if (methodTraceConfig.enableLog) {
+                    println("methodAnnoPathMatcher: $this")
                 }
             }
 
@@ -150,7 +164,8 @@ class VSMethodTracePlugin : Plugin<Project> {
                                     BytecodeInstrumentation.tryInstrument(
                                         costTimeThreshold = methodTraceConfig.costTimeThreshold,
                                         enableLog = methodTraceConfig.enableLog,
-                                        pathMatcher = pathMatcher,
+                                        classPathMatcher = classPathMatcher,
+                                        methodAnnoPathMatcher = methodAnnoPathMatcher,
                                         classFullName = jarEntry.name,
                                         classFileInputStream = classFileInputStream,
                                     )
@@ -187,7 +202,8 @@ class VSMethodTracePlugin : Plugin<Project> {
                                 BytecodeInstrumentation.tryInstrument(
                                     costTimeThreshold = methodTraceConfig.costTimeThreshold,
                                     enableLog = methodTraceConfig.enableLog,
-                                    pathMatcher = pathMatcher,
+                                    classPathMatcher = classPathMatcher,
+                                    methodAnnoPathMatcher = methodAnnoPathMatcher,
                                     classFullName = relativePath,
                                     classFileInputStream = classFileInputStream,
                                 )
@@ -240,7 +256,8 @@ class VSMethodTracePlugin : Plugin<Project> {
                             .set(
                                 EXT_METHOD_TRACE_CONFIG,
                                 VSMethodTraceConfig(
-                                    costTimeThreshold = vsMethodTraceConfig?.costTimeThreshold?: Long.MAX_VALUE,
+                                    costTimeThreshold = vsMethodTraceConfig?.costTimeThreshold
+                                        ?: Long.MAX_VALUE,
                                     enableLog = vsMethodTraceConfig?.enableLog ?: false,
                                     includePackagePrefixSet = vsMethodTraceConfig?.includePackagePrefixSet
                                         ?: emptySet(),
@@ -249,6 +266,18 @@ class VSMethodTracePlugin : Plugin<Project> {
                                     includePackagePatternSet = vsMethodTraceConfig?.includePackagePatternSet
                                         ?: emptySet(),
                                     excludePackagePatternSet = vsMethodTraceConfig?.excludePackagePatternSet
+                                        ?: emptySet(),
+                                    includeMethodAnnoSet = vsMethodTraceConfig?.includeMethodAnnoSet
+                                        ?: emptySet(),
+                                    excludeMethodAnnoSet = vsMethodTraceConfig?.excludeMethodAnnoSet
+                                        ?: emptySet(),
+                                    includeMethodAnnoPrefixSet = vsMethodTraceConfig?.includeMethodAnnoPrefixSet
+                                        ?: emptySet(),
+                                    excludeMethodAnnoPrefixSet = vsMethodTraceConfig?.excludeMethodAnnoPrefixSet
+                                        ?: emptySet(),
+                                    includeMethodAnnoPatternSet = vsMethodTraceConfig?.includeMethodAnnoPatternSet
+                                        ?: emptySet(),
+                                    excludeMethodAnnoPatternSet = vsMethodTraceConfig?.excludeMethodAnnoPatternSet
                                         ?: emptySet(),
                                     matchAll = vsMethodTraceConfig?.matchAll ?: false,
                                 )

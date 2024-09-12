@@ -5,34 +5,43 @@ package com.vistring.trace
  */
 class PathMatcher(
     val enableLog: Boolean = false,
-    val includePackagePrefixSet: Set<String> = emptySet(),
-    val excludePackagePrefixSet: Set<String> = emptySet(),
-    val includePackagePatternSet: Set<String> = emptySet(),
-    val excludePackagePatternSet: Set<String> = emptySet(),
+    val includeSet: Set<String> = emptySet(),
+    val excludeSet: Set<String> = emptySet(),
+    val includePrefixSet: Set<String> = emptySet(),
+    val excludePrefixSet: Set<String> = emptySet(),
+    val includePatternSet: Set<String> = emptySet(),
+    val excludePatternSet: Set<String> = emptySet(),
     val matchAll: Boolean = false,
 ) {
 
-    private val includePackagePatternSetAdapter = includePackagePatternSet.map {
+    private val includePackagePatternSetAdapter = includePatternSet.map {
         it.toPattern()
     }
 
-    private val excludePackagePatternSetAdapter = excludePackagePatternSet.map {
+    private val excludePackagePatternSetAdapter = excludePatternSet.map {
         it.toPattern()
     }
 
     /**
-     * @param className xxx.xxx.xxx
+     * @param target 待匹配的字符串
      */
-    fun isMatch(className: String): Boolean {
-        val isExcluded = excludePackagePatternSetAdapter.any { pattern ->
-            pattern.matcher(className).matches()
-        } || excludePackagePrefixSet.any {
-            className.startsWith(prefix = it)
+    fun isMatch(target: String?): Boolean {
+        if (target.isNullOrEmpty()) {
+            return false
         }
-        val isIncluded = includePackagePatternSetAdapter.any { pattern ->
-            pattern.matcher(className).matches()
-        } || includePackagePrefixSet.any {
-            className.startsWith(prefix = it)
+        val isExcluded = excludeSet.any {
+            target == it
+        } || excludePrefixSet.any {
+            target.startsWith(prefix = it)
+        } || excludePackagePatternSetAdapter.any { pattern ->
+            pattern.matcher(target).matches()
+        }
+        val isIncluded = includeSet.any {
+            target == it
+        } || includePrefixSet.any {
+            target.startsWith(prefix = it)
+        } || includePackagePatternSetAdapter.any { pattern ->
+            pattern.matcher(target).matches()
         }
         return if (matchAll) {
             !isExcluded
@@ -42,8 +51,7 @@ class PathMatcher(
     }
 
     override fun toString(): String {
-        return "PathMatcher(enableLog=$enableLog, includePackagePrefixSet=$includePackagePrefixSet, excludePackagePrefixSet=$excludePackagePrefixSet, includePackagePatternSet=$includePackagePatternSet, excludePackagePatternSet=$excludePackagePatternSet, includePackagePatternSetAdapter=$includePackagePatternSetAdapter, excludePackagePatternSetAdapter=$excludePackagePatternSetAdapter)"
+        return "PathMatcher(enableLog=$enableLog, includeSet=$includeSet, excludeSet=$excludeSet, includePrefixSet=$includePrefixSet, excludePrefixSet=$excludePrefixSet, includePatternSet=$includePatternSet, excludePatternSet=$excludePatternSet, matchAll=$matchAll, includePackagePatternSetAdapter=$includePackagePatternSetAdapter, excludePackagePatternSetAdapter=$excludePackagePatternSetAdapter)"
     }
-
 
 }

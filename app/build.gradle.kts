@@ -18,6 +18,12 @@ vsMethodTraceConfig {
         // "kotlin",
         // "androidx",
     )
+    includeMethodAnnoSet = setOf(
+        "androidx.annotation.Keep",
+    )
+    excludeMethodAnnoSet = setOf(
+        "org.jetbrains.annotations.Nullable",
+    )
     matchAll = true
 }
 

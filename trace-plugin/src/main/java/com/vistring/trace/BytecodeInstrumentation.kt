@@ -1,6 +1,7 @@
 package com.vistring.trace
 
 import com.vistring.trace.RenameForTraceClassVisitor.Companion.RENAME_FOR_SUFFIX
+import org.objectweb.asm.AnnotationVisitor
 import org.objectweb.asm.ClassReader
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.ClassWriter
@@ -12,6 +13,8 @@ import java.io.InputStream
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
+
+private const val EnableDetailLog = false
 
 /**
  * 用来创建完整的代理对象的方法. 下面的例子就是此方法来生成的
@@ -460,9 +463,11 @@ private class InstrumentationClassVisitor(
     val asmApi: Int,
     val nextClassVisitor: ClassVisitor,
     val enableLog: Boolean,
+    val methodAnnoPathMatcher: PathMatcher,
     val slashClassName: String,
     val dotClassName: String,
     val methodFlagCounter: AtomicInteger,
+    // 插桩成功的方法会收集在这里. key 是方法的唯一标记, value 是方法的唯一标记
     val instrumentSuccessfulMethodList: MutableMap<String, Int>,
 ) : ClassVisitor(asmApi, nextClassVisitor) // 占位
 {
@@ -489,7 +494,7 @@ private class InstrumentationClassVisitor(
         exceptions: Array<out String>?,
     ): MethodVisitor? {
 
-        var enableDetailLog = enableLog && false
+        val isLog = enableLog && EnableDetailLog
 
         // 是否可以插桩
         val canInstrument = !isInterface &&
@@ -500,7 +505,8 @@ private class InstrumentationClassVisitor(
                 (access and Opcodes.ACC_ABSTRACT == 0) &&
                 (access and Opcodes.ACC_ANNOTATION == 0)
 
-        if (enableDetailLog) {
+        if (isLog) {
+            println() // 换行
             println("InstrumentationClassVisitor.visitMethod -----> $slashClassName.$name, canInstrument: $canInstrument")
         }
 
@@ -519,6 +525,27 @@ private class InstrumentationClassVisitor(
                 private var isCalledVisitCode: Boolean = false
                 private var firstLineNumber: Int? = null
 
+                private val methodAnnoMatchResultList = mutableListOf<Boolean>()
+                private var canInstrumentFromMethodAnno = false
+
+                override fun visitAnnotation(
+                    descriptor: String?,
+                    visible: Boolean
+                ): AnnotationVisitor {
+                    // descriptor: Lorg/jetbrains/annotations/Nullable;
+                    val annoDotPath =
+                        descriptor?.removePrefix("L")?.removeSuffix(";")?.replace("/", ".")
+                    methodAnnoMatchResultList.add(
+                        element = methodAnnoPathMatcher.isMatch(
+                            target = annoDotPath,
+                        ),
+                    )
+                    if (isLog) {
+                        println("InstrumentationClassVisitor.visitAnnotation descriptor = $descriptor, visible = $visible")
+                    }
+                    return super.visitAnnotation(descriptor, visible)
+                }
+
                 override fun visitLineNumber(line: Int, start: Label) {
                     if (isCalledVisitCode && firstLineNumber == null) {
                         firstLineNumber = line
@@ -527,33 +554,50 @@ private class InstrumentationClassVisitor(
                 }
 
                 override fun visitCode() {
-                    mv = null
-                    // visitCode 压着不调用先.
+                    // 从方法的注解上判断这个方法是否需要插桩
+                    canInstrumentFromMethodAnno = methodAnnoMatchResultList.all { it }
+                    if (isLog) {
+                        println("InstrumentationClassVisitor.visitMethod.visitCode called, canInstrumentFromMethodAnno = $canInstrumentFromMethodAnno")
+                    }
+                    if (canInstrumentFromMethodAnno) {
+                        // visitCode 压着不调用先.
+                        mv = null
+                    }
                     super.visitCode()
                     isCalledVisitCode = true
                 }
 
                 override fun visitEnd() {
-
-                    proxyMethodVisitor.visitCode()
-                    proxyMethodVisitor.createProxyMethod(
-                        enableLog = enableDetailLog,
-                        slashClassName = slashClassName,
-                        dotClassName = dotClassName,
-                        methodFirstLineNumber = firstLineNumber,
-                        methodAccess = access,
-                        methodDescriptor = descriptor!!,
-                        methodFlag = methodFlag,
-                        methodName = name,
-                        nameForTrace = nameForTrace,
-                    )
+                    if (canInstrumentFromMethodAnno) {
+                        if (isLog) {
+                            println("InstrumentationClassVisitor.visitMethod.visitEnd 准备进行插桩, name = $name, descriptor = $descriptor")
+                        }
+                        proxyMethodVisitor.visitCode()
+                        proxyMethodVisitor.createProxyMethod(
+                            enableLog = isLog,
+                            slashClassName = slashClassName,
+                            dotClassName = dotClassName,
+                            methodFirstLineNumber = firstLineNumber,
+                            methodAccess = access,
+                            methodDescriptor = descriptor!!,
+                            methodFlag = methodFlag,
+                            methodName = name,
+                            nameForTrace = nameForTrace,
+                        )
+                    }
                     mv = proxyMethodVisitor
                     // proxyMethodVisitor.visitEnd()
                     super.visitEnd()
+                    if (canInstrumentFromMethodAnno) {
+                        // 记录插桩成功的方法信息
+                        instrumentSuccessfulMethodList[
+                            "${slashClassName}.$name<$descriptor>"
+                        ] = methodFlag
+                    }
+                    methodAnnoMatchResultList.clear()
+                    canInstrumentFromMethodAnno = false
                     isCalledVisitCode = false
                     firstLineNumber = null
-                    // 记录插桩成功的方法信息
-                    instrumentSuccessfulMethodList["${slashClassName}.$name<$descriptor>"] = methodFlag
                 }
 
             }
@@ -629,9 +673,10 @@ private class RenameForTraceClassVisitor(
         exceptions: Array<out String>?,
     ): MethodVisitor? {
 
-        val enableDetailLog = enableLog && false
+        val isLog = enableLog && EnableDetailLog
 
-        if (enableDetailLog) {
+        if (isLog) {
+            println() // 换行
             println("RenameForTraceClassVisitor.visitMethod, name = $name, descriptor = $descriptor")
         }
 
@@ -642,7 +687,7 @@ private class RenameForTraceClassVisitor(
 
         val nameForTrace = "$name$RENAME_FOR_SUFFIX$methodFlag"
 
-        if (enableDetailLog) {
+        if (isLog) {
             if (canInstrument) {
                 println("RenameForTraceClassVisitor.needRename: $name ----> $nameForTrace")
             }
@@ -673,6 +718,7 @@ private class RenameForTraceClassVisitor(
 private fun transformClassBytecode(
     asmApi: Int,
     enableLog: Boolean,
+    methodAnnoPathMatcher: PathMatcher,
     originClassBytes: ByteArray,
     // xxx/xxx/xxx
     slashClassName: String,
@@ -696,6 +742,7 @@ private fun transformClassBytecode(
         asmApi = asmApi,
         nextClassVisitor = outputClassWriter,
         enableLog = enableLog,
+        methodAnnoPathMatcher = methodAnnoPathMatcher,
         slashClassName = slashClassName,
         dotClassName = dotClassName,
         methodFlagCounter = methodFlagCounter,
@@ -745,7 +792,8 @@ object BytecodeInstrumentation {
     fun tryInstrument(
         costTimeThreshold: Long,
         enableLog: Boolean = false,
-        pathMatcher: PathMatcher,
+        classPathMatcher: PathMatcher,
+        methodAnnoPathMatcher: PathMatcher,
         // xxx/xxx/xxx.class
         classFullName: String,
         classFileInputStream: InputStream,
@@ -758,9 +806,9 @@ object BytecodeInstrumentation {
             return originClassBytes
         }*/
 
-        /*if ("com/vistring/trace/demo/test1/TestJava.class" != classFullName) {
+        if ("com/vistring/trace/demo/test1/TestJava.class" != classFullName) {
             return originClassBytes
-        }*/
+        }
 
         // xxx/xxx/xxx
         val slashClassName = classFullName
@@ -819,7 +867,7 @@ object BytecodeInstrumentation {
         // 此包下是 trace 耗时统计的模块, 不需要处理
         return if (CLASS_NAME_IGNORE_LIST.any { it == dotClassName }) {
             originClassBytes
-        } else if (pathMatcher.isMatch(className = dotClassName)) {
+        } else if (classPathMatcher.isMatch(target = dotClassName)) {
             if (enableLog) {
                 println()
                 println("${VSMethodTracePlugin.TAG}: transformClassBytecode start ===================================== $dotClassName")
@@ -828,6 +876,7 @@ object BytecodeInstrumentation {
                 transformClassBytecode(
                     asmApi = ASM_API,
                     enableLog = enableLog,
+                    methodAnnoPathMatcher = methodAnnoPathMatcher,
                     originClassBytes = originClassBytes,
                     slashClassName = slashClassName,
                     dotClassName = dotClassName,
