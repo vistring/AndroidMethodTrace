@@ -51,7 +51,7 @@ plugins {
 
 // 配置插件. 建议使用白名单机制, 例如下面的
 vsMethodTraceConfig {
-		// 配置耗时阈值
+    // 配置耗时阈值
     costTimeThreshold = 80L
     // 比如下面两个包名前缀的都会被统计到
     /*includePackagePrefixSet = setOf(
@@ -109,18 +109,18 @@ debugImplementation("com.github.vistring.AndroidMethodTrace:method-trace:<versio
 
 ```Kotlin
 vsMethodTraceConfig {
-		// ......
+    // ......
     excludePackagePrefixSet = setOf(
         "kotlin.",
         "kotlinx.",
         "android.",
         "androidx.",
         "com.google.",
-      	// 如果还有其他的请提 issue 告诉我
+        // 如果还有其他的请提 issue 告诉我
     )
     excludeMethodAnnoPrefixSet = setOf(
-    		// 这个一定要配置. 否则对 @FromJson 的方法插桩会有运行错误
-      	// 如果还有其他的请提 issue 告诉我
+        // 这个一定要配置. 否则对 @FromJson 的方法插桩会有运行错误
+        // 如果还有其他的请提 issue 告诉我
         "com.squareup.moshi",
     )
     // ......
