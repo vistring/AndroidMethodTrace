@@ -7,23 +7,10 @@ plugins {
 vsMethodTraceConfig {
     enableLog = true
     costTimeThreshold = 100L
-    /*includePackagePrefixSet = setOf(
-        "com.vistring.",
-    )*/
-    /*includePackagePatternSet = setOf(
-        "com\\.vistring\\.trace\\.demo\\.test1\\..*",
-        // "com\\.vistring\\..*",
-    )*/
     excludePackagePrefixSet = setOf(
-        // "kotlin",
-        // "androidx",
+        "androidx.",
     )
-    includeMethodAnnoSet = setOf(
-        "androidx.annotation.Keep",
-    )
-    excludeMethodAnnoSet = setOf(
-        "org.jetbrains.annotations.Nullable",
-    )
+    // 匹配全部
     matchAll = true
 }
 
