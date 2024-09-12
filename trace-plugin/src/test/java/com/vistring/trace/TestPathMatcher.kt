@@ -10,53 +10,72 @@ import org.junit.Test
 class TestPathMatcher {
 
     @Test
-    fun testPackagePrefixMatch() {
+    fun testNormalPathMatch() {
         val pathMatcher = PathMatcher(
-            includePackagePrefixSet = setOf(
-                "com.vistring.trace",
+            includeSet = setOf(
+                "com.vistring.trace.Test",
             ),
-            excludePackagePrefixSet = setOf(
-                "com.vistring.trace.demo",
+            excludeSet = setOf(
+                "com.vistring.trace.Test.ttt",
             ),
         )
         assert(
             pathMatcher.isMatch(
-                className = "com.vistring.trace.Test"
-            ) && pathMatcher.isMatch(
-                className = "com.vistring.trace.Test.ttt"
-            )
-        )
-        assert(
-            !pathMatcher.isMatch(
-                className = "com.vistring.trace.demo"
+                target = "com.vistring.trace.Test"
             ) && !pathMatcher.isMatch(
-                className = "com.vistring.trace.demo.ttt"
+                target = "com.vistring.trace.Test.ttt"
             )
         )
     }
 
     @Test
-    fun testPackagePatternMatch() {
+    fun testPathPrefixMatch() {
         val pathMatcher = PathMatcher(
-            includePackagePatternSet = setOf(
+            includePrefixSet = setOf(
+                "com.vistring.trace",
+            ),
+            excludePrefixSet = setOf(
+                "com.vistring.trace.demo",
+            ),
+        )
+        assert(
+            pathMatcher.isMatch(
+                target = "com.vistring.trace.Test"
+            ) && pathMatcher.isMatch(
+                target = "com.vistring.trace.Test.ttt"
+            )
+        )
+        assert(
+            !pathMatcher.isMatch(
+                target = "com.vistring.trace.demo"
+            ) && !pathMatcher.isMatch(
+                target = "com.vistring.trace.demo.ttt"
+            )
+        )
+    }
+
+    @Test
+    fun testPathPatternMatch() {
+        val pathMatcher = PathMatcher(
+            includePatternSet = setOf(
                 "com.vistring.trace.*",
             ),
-            excludePackagePatternSet = setOf(
+            excludePatternSet = setOf(
                 "com.vistring.trace.demo.*",
             ),
         )
         assert(
             pathMatcher.isMatch(
-                className = "com.vistring.trace.Test"
+                target = "com.vistring.trace.Test"
             ) && pathMatcher.isMatch(
-                className = "com.vistring.trace.Test.ttt"
+                target = "com.vistring.trace.Test.ttt"
             )
         )
         assert(
             !pathMatcher.isMatch(
-                className = "com.vistring.trace.demo"
+                target = "com.vistring.trace.demo"
             ) && !pathMatcher.isMatch(
-                className = "com.vistring.trace.demo.ttt"
+                target = "com.vistring.trace.demo.ttt"
             )
         )
     }
@@ -64,32 +83,32 @@ class TestPathMatcher {
     @Test
     fun testMatchAllParameterMatch() {
         val pathMatcher = PathMatcher(
-            excludePackagePrefixSet = setOf(
+            excludePrefixSet = setOf(
                 "com.vistring.trace.demo",
             ),
-            excludePackagePatternSet = setOf(
+            excludePatternSet = setOf(
                 "com.vistring.trace.demo.*",
             ),
             matchAll = true,
         )
         assert(
             pathMatcher.isMatch(
-                className = "com.vistring.trace.Test"
+                target = "com.vistring.trace.Test"
             ) && pathMatcher.isMatch(
-                className = "com.vistring.trace.Test.ttt"
+                target = "com.vistring.trace.Test.ttt"
             )
         )
         assert(
             !pathMatcher.isMatch(
-                className = "com.vistring.trace.demo"
+                target = "com.vistring.trace.demo"
             ) && !pathMatcher.isMatch(
-                className = "com.vistring.trace.demo.ttt"
+                target = "com.vistring.trace.demo.ttt"
             )
         )
     }
 
     @Test
-    fun test1() {
+    fun testDescriptorParse() {
         assert(
             (listOf(
                 "Ljava/lang/String;", DescriptorParser.INT,
