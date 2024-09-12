@@ -10,6 +10,9 @@ vsMethodTraceConfig {
     excludePackagePrefixSet = setOf(
         "androidx.",
     )
+    excludeMethodAnnoSet = setOf(
+        "androidx.annotation.MainThread",
+    )
     // 匹配全部
     matchAll = true
 }
