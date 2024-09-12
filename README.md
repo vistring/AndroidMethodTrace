@@ -49,13 +49,18 @@ plugins {
     id("com.vistring.trace.method.plugin")
 }
 
+// 一份
 vsMethodTraceConfig {
     costTimeThreshold = 80L
   	// 比如下面两个包名前缀的都会被统计到
-    includePackagePrefixSet = setOf(
+    /*includePackagePrefixSet = setOf(
         "com.vistring.trace.demo.view",
         "com.vistring.trace.demo.test",
-    )
+    )*/
+    // 比如排除掉这个包名前缀的都不会被统计到
+    /*excludeMethodAnnoSet = setOf(
+        "androidx.annotation.MainThread",
+    )*/
 }
 ```
 
@@ -76,6 +81,18 @@ var excludePackagePrefixSet: Set<String>? = null
 var includePackagePatternSet: Set<String>? = null
 // 排除的包名正则
 var excludePackagePatternSet: Set<String>? = null
+// 包含被注解的方法
+var includeMethodAnnoSet: Set<String>? = null
+// 排除被注解的方法
+var excludeMethodAnnoSet: Set<String>? = null
+// 包含被注解前缀的方法
+var includeMethodAnnoPrefixSet: Set<String>? = null
+// 排除被注解前缀的方法
+var excludeMethodAnnoPrefixSet: Set<String>? = null
+// 包含被注解的方法
+var includeMethodAnnoPatternSet: Set<String>? = null
+// 排除被注解的方法
+var excludeMethodAnnoPatternSet: Set<String>? = null
 ```
 
 > 添加 MethodTrace 的依赖库
