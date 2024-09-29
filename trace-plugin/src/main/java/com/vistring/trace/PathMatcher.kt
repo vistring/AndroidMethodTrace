@@ -4,7 +4,7 @@ package com.vistring.trace
  * 路径匹配器
  */
 class PathMatcher(
-    val enableLog: Boolean = false,
+    private val enableLog: Boolean,
     val includeSet: Set<String> = emptySet(),
     val excludeSet: Set<String> = emptySet(),
     val includePrefixSet: Set<String> = emptySet(),

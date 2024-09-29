@@ -70,7 +70,7 @@ vsMethodTraceConfig 所有参数如下, 可自行配置：
 ```Kotlin
 // 匹配全部, 默认为 false 如果开启此配置. 
 // 请一定要阅读文档最后建议排除的一些包名和一些方法
-var matchAll: Boolean? = null,
+var matchAll: Boolean? = null
 // 方法耗时阈值
 var costTimeThreshold: Long? = null
 // 是否开启方法耗时统计

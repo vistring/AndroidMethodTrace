@@ -48,7 +48,7 @@ object MethodTracker {
         methodCost: Long,
         methodTotalCost: Long,
     ) {
-        Log.d(
+        Log.e(
             TAG,
             "methodFlag = $methodFlag, methodTotalCost = $methodTotalCost, methodCost = $methodCost",
         )
@@ -59,7 +59,7 @@ object MethodTracker {
             // .take(8)
             .forEach { stackTraceElement ->
                 if (isPrint) {
-                    Log.d(
+                    Log.e(
                         TAG,
                         "\t\t$stackTraceElement",
                     )

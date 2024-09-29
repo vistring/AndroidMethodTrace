@@ -42,8 +42,8 @@ open class VSMethodTraceInitConfig(
 )
 
 data class VSMethodTraceConfig(
-    val costTimeThreshold: Long,
     val enableLog: Boolean,
+    val costTimeThreshold: Long,
     val includePackagePrefixSet: Set<String>,
     val excludePackagePrefixSet: Set<String>,
     val includePackagePatternSet: Set<String>,

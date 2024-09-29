@@ -256,9 +256,9 @@ class VSMethodTracePlugin : Plugin<Project> {
                             .set(
                                 EXT_METHOD_TRACE_CONFIG,
                                 VSMethodTraceConfig(
+                                    enableLog = vsMethodTraceConfig?.enableLog ?: false,
                                     costTimeThreshold = vsMethodTraceConfig?.costTimeThreshold
                                         ?: Long.MAX_VALUE,
-                                    enableLog = vsMethodTraceConfig?.enableLog ?: false,
                                     includePackagePrefixSet = vsMethodTraceConfig?.includePackagePrefixSet
                                         ?: emptySet(),
                                     excludePackagePrefixSet = vsMethodTraceConfig?.excludePackagePrefixSet
