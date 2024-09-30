@@ -90,4 +90,28 @@ class MethodTrackerTest {
         )
     }
 
+    /**
+     * 测试下插桩本身耗时多少
+     */
+    @Test
+    fun testAsmTimeCost() {
+        val uselessFlag = Int.MAX_VALUE
+        val testName = "MethodTrackerTest.testName"
+        val startTime = System.currentTimeMillis()
+        val loopCount = 100000
+        repeat(times = loopCount) {
+            MethodTracker.start(
+                methodFlag = uselessFlag,
+                name = testName,
+            )
+            MethodTracker.end(
+                methodFlag = uselessFlag,
+                name = testName,
+            )
+        }
+        val endTime = System.currentTimeMillis()
+        val cost = endTime - startTime
+        println("cost = $cost, average = ${cost / loopCount.toFloat()}")
+    }
+
 }
