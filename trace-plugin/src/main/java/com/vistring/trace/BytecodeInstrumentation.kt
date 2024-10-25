@@ -9,7 +9,9 @@ import org.objectweb.asm.Label
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
 import org.objectweb.asm.commons.AdviceAdapter
+import java.io.File
 import java.io.InputStream
+import java.io.RandomAccessFile
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
@@ -155,13 +157,14 @@ private fun MethodVisitor.createProxyMethod(
                 )
             }
             targetMethodVisitor.visitLdcInsn(methodFlag)
-            targetMethodVisitor.visitLdcInsn("$dotClassName.$methodName")
+            // targetMethodVisitor.visitLdcInsn("$dotClassName.$methodName")
             targetMethodVisitor.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
                 "com/vistring/trace/MethodTracker",
                 "start",
                 // "()V",
-                "(ILjava/lang/String;)V",
+                "(I)V",
+                // "(ILjava/lang/String;)V",
                 false,
             )
             targetMethodVisitor.visitLabel(methodStartTraceEndLabel)
@@ -296,13 +299,14 @@ private fun MethodVisitor.createProxyMethod(
                 methodEndTraceStartLabelNormal,
             )
             targetMethodVisitor.visitLdcInsn(methodFlag)
-            targetMethodVisitor.visitLdcInsn("$dotClassName.$methodName")
+            // targetMethodVisitor.visitLdcInsn("$dotClassName.$methodName")
             targetMethodVisitor.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
                 "com/vistring/trace/MethodTracker",
                 "end",
                 // "()V",
-                "(ILjava/lang/String;)V",
+                "(I)V",
+                // "(ILjava/lang/String;)V",
                 false,
             )
             targetMethodVisitor.visitLabel(
@@ -394,13 +398,14 @@ private fun MethodVisitor.createProxyMethod(
                 methodEndTraceStartLabelException
             )
             targetMethodVisitor.visitLdcInsn(methodFlag)
-            targetMethodVisitor.visitLdcInsn("$dotClassName.$methodName")
+            // targetMethodVisitor.visitLdcInsn("$dotClassName.$methodName")
             targetMethodVisitor.visitMethodInsn(
                 Opcodes.INVOKESTATIC,
                 "com/vistring/trace/MethodTracker",
                 "end",
                 // "()V",
-                "(ILjava/lang/String;)V",
+                "(I)V",
+                // "(ILjava/lang/String;)V",
                 false,
             )
             targetMethodVisitor.visitLabel(
@@ -461,6 +466,7 @@ private fun MethodVisitor.createProxyMethod(
  */
 private class InstrumentationClassVisitor(
     val asmApi: Int,
+    val randomAccessFile: RandomAccessFile,
     val nextClassVisitor: ClassVisitor,
     val enableLog: Boolean,
     val methodAnnoPathMatcher: PathMatcher,
@@ -511,7 +517,15 @@ private class InstrumentationClassVisitor(
         }
 
         return if (canInstrument) {
+
             val methodFlag = methodFlagCounter.incrementAndGet()
+
+            MethodMapping.writeToLine(
+                randomAccessFile = randomAccessFile,
+                lineNumber = methodFlag,
+                methodSignature = "$dotClassName/name:${descriptor.orEmpty()}",
+            )
+
             val nameForTrace = "$name$RENAME_FOR_SUFFIX$methodFlag"
             val proxyMethodVisitor = nextClassVisitor.visitMethod(
                 access,
@@ -717,6 +731,7 @@ private class RenameForTraceClassVisitor(
 @Throws(Exception::class)
 private fun transformClassBytecode(
     asmApi: Int,
+    randomAccessFile: RandomAccessFile,
     enableLog: Boolean,
     methodAnnoPathMatcher: PathMatcher,
     originClassBytes: ByteArray,
@@ -740,6 +755,7 @@ private fun transformClassBytecode(
     // 尝试方法插桩的方法
     val instrumentationClassVisitor = InstrumentationClassVisitor(
         asmApi = asmApi,
+        randomAccessFile = randomAccessFile,
         nextClassVisitor = outputClassWriter,
         enableLog = enableLog,
         methodAnnoPathMatcher = methodAnnoPathMatcher,
@@ -790,6 +806,7 @@ object BytecodeInstrumentation {
      * @return 返回尝试插桩后的字节数组, 如果插桩过程中失败, 将会返回原来的字节数组. 否则就是插桩过后的字节码会被返回
      */
     fun tryInstrument(
+        resourcesFolder: File?,
         costTimeThreshold: Long,
         enableLog: Boolean = false,
         classPathMatcher: PathMatcher,
@@ -802,93 +819,116 @@ object BytecodeInstrumentation {
         // 原来 class 的字节数组
         val originClassBytes = classFileInputStream.readBytes()
 
-        /*if ("xxx/xxx/xxx.class" != classFullName) {
+        if (resourcesFolder == null) {
             return originClassBytes
-        }*/
-
-        // xxx/xxx/xxx
-        val slashClassName = classFullName
-            .removeSuffix(suffix = ".class")
-
-        // xxx.xxx.xxx
-        val dotClassName = slashClassName
-            .replace("/", ".")
-
-        // 如果是 tracker 类, 需要更改 COST_TIME_THRESHOLD 常量的值
-        if (METHOD_TRACKER_CLASS_NAME == dotClassName) {
-            return kotlin.runCatching {
-
-                val classReader = ClassReader(
-                    originClassBytes,
-                )
-                val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
-
-                val classVisitor = object : ClassVisitor(ASM_API, classWriter) {
-
-                    override fun visitMethod(
-                        access: Int,
-                        name: String?,
-                        descriptor: String?,
-                        signature: String?,
-                        exceptions: Array<out String>?
-                    ): MethodVisitor? {
-                        val originMethodVisitor =
-                            super.visitMethod(access, name, descriptor, signature, exceptions)
-                        if ("getCostTimeThread" == name) {
-                            return object : AdviceAdapter(
-                                ASM_API, originMethodVisitor,
-                                access, name, descriptor,
-                            ) {
-                                // 因为 getCostTimeThread 就一个这个指令
-                                // 把 值换成想要的
-                                override fun visitLdcInsn(value: Any?) {
-                                    super.visitLdcInsn(costTimeThreshold)
-                                }
-                            }
-                        }
-                        return originMethodVisitor
-                    }
-
-                }
-                classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
-                classWriter.toByteArray()
-
-            }.apply {
-                if (enableLog && this.isFailure) {
-                    println("$VSMethodTracePlugin transform $METHOD_TRACKER_CLASS_NAME fail: $dotClassName")
-                }
-            }.getOrNull() ?: originClassBytes
         }
 
-        // 此包下是 trace 耗时统计的模块, 不需要处理
-        return if (CLASS_NAME_IGNORE_LIST.any { it == dotClassName }) {
-            originClassBytes
-        } else if (classPathMatcher.isMatch(target = dotClassName)) {
-            if (enableLog) {
-                println()
-                println("${VSMethodTracePlugin.TAG}: transformClassBytecode start ===================================== $dotClassName")
+        /**
+         * 内部的每一行都是一个具体方法的完整路径
+         * 而第几行 index 为 key, 对应的 value 是 method 的完整路径
+         */
+        val methodMappingFile = File(resourcesFolder, "methodTraceMapping.txt").apply {
+            if (!exists()) {
+                this.delete()
+                this.createNewFile()
             }
-            kotlin.runCatching {
-                transformClassBytecode(
-                    asmApi = ASM_API,
-                    enableLog = enableLog,
-                    methodAnnoPathMatcher = methodAnnoPathMatcher,
-                    originClassBytes = originClassBytes,
-                    slashClassName = slashClassName,
-                    dotClassName = dotClassName,
-                    methodFlagCounter = methodFlagCounter,
-                )
-            }.apply {
-                if (enableLog && this.isFailure) {
-                    println("$VSMethodTracePlugin transform fail: $dotClassName, ${this.exceptionOrNull()?.message}")
-                    // this.exceptionOrNull()?.printStackTrace()
-                }
-            }.getOrNull() ?: originClassBytes
-        } else {
-            originClassBytes
         }
+
+        return RandomAccessFile(methodMappingFile, "rw")
+            .use { randomAccessFile ->
+                /*if ("xxx/xxx/xxx.class" != classFullName) {
+                    return originClassBytes
+                }*/
+
+                // xxx/xxx/xxx
+                val slashClassName = classFullName
+                    .removeSuffix(suffix = ".class")
+
+                // xxx.xxx.xxx
+                val dotClassName = slashClassName
+                    .replace("/", ".")
+
+                // 如果是 tracker 类, 需要更改 COST_TIME_THRESHOLD 常量的值
+                if (METHOD_TRACKER_CLASS_NAME == dotClassName) {
+                    return kotlin.runCatching {
+
+                        val classReader = ClassReader(
+                            originClassBytes,
+                        )
+                        val classWriter = ClassWriter(ClassWriter.COMPUTE_MAXS)
+
+                        val classVisitor = object : ClassVisitor(ASM_API, classWriter) {
+
+                            override fun visitMethod(
+                                access: Int,
+                                name: String?,
+                                descriptor: String?,
+                                signature: String?,
+                                exceptions: Array<out String>?
+                            ): MethodVisitor? {
+                                val originMethodVisitor =
+                                    super.visitMethod(access, name, descriptor, signature, exceptions)
+                                if ("getCostTimeThread" == name) {
+                                    return object : AdviceAdapter(
+                                        ASM_API, originMethodVisitor,
+                                        access, name, descriptor,
+                                    ) {
+                                        // 因为 getCostTimeThread 就一个这个指令
+                                        // 把 值换成想要的
+                                        override fun visitLdcInsn(value: Any?) {
+                                            super.visitLdcInsn(costTimeThreshold)
+                                        }
+                                    }
+                                }
+                                return originMethodVisitor
+                            }
+
+                        }
+                        classReader.accept(classVisitor, ClassReader.EXPAND_FRAMES)
+                        classWriter.toByteArray()
+
+                    }.apply {
+                        if (enableLog && this.isFailure) {
+                            println("$VSMethodTracePlugin transform $METHOD_TRACKER_CLASS_NAME fail: $dotClassName")
+                        }
+                    }.getOrNull() ?: originClassBytes
+                }
+
+                // 此包下是 trace 耗时统计的模块, 不需要处理
+                if (CLASS_NAME_IGNORE_LIST.any { it == dotClassName }) {
+                    originClassBytes
+                } else if (classPathMatcher.isMatch(target = dotClassName)) {
+                    if (enableLog) {
+                        println()
+                        println("${VSMethodTracePlugin.TAG}: transformClassBytecode start ===================================== $dotClassName")
+                    }
+                    kotlin.runCatching {
+                        transformClassBytecode(
+                            asmApi = ASM_API,
+                            randomAccessFile = randomAccessFile,
+                            enableLog = enableLog,
+                            methodAnnoPathMatcher = methodAnnoPathMatcher,
+                            originClassBytes = originClassBytes,
+                            slashClassName = slashClassName,
+                            dotClassName = dotClassName,
+                            methodFlagCounter = methodFlagCounter,
+                        )
+                    }.apply {
+                        if (enableLog && this.isFailure) {
+                            println("$VSMethodTracePlugin transform fail: $dotClassName, ${this.exceptionOrNull()?.message}")
+                            // this.exceptionOrNull()?.printStackTrace()
+                        }
+                    }.getOrNull() ?: originClassBytes
+                } else {
+                    originClassBytes
+                }
+            }
+
     }
 
+    /**
+     * 每次 build 的时候重置一下
+     */
     fun resetMethodFlag() {
         methodFlagCounter.set(0)
     }

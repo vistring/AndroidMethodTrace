@@ -7,7 +7,7 @@ import org.junit.Test
  *
  * See [testing documentation](http://d.android.com/tools/testing).
  */
-class TestPathMatcher {
+class PathMatcherTest {
 
     @Test
     fun testNormalPathMatch() {

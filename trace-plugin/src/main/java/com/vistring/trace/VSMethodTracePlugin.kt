@@ -154,7 +154,12 @@ class VSMethodTracePlugin : Plugin<Project> {
                     // kotlin/ranges/RangesKt__RangesKt.class
                     try {
                         jarOutput.putNextEntry(JarEntry(jarEntry.name))
-                        if (jarEntry.isDirectory || !jarEntry.name.endsWith(".class")) {
+                        if (
+                            jarEntry.isDirectory ||
+                            !jarEntry.name.endsWith(
+                                ".class"
+                            )
+                        ) {
                             jarFile.getInputStream(jarEntry).use {
                                 it.copyTo(jarOutput)
                             }
@@ -162,6 +167,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                             jarOutput.write(
                                 jarFile.getInputStream(jarEntry).use { classFileInputStream ->
                                     BytecodeInstrumentation.tryInstrument(
+                                        resourcesFolder = methodTraceConfig.resourcesFolder,
                                         costTimeThreshold = methodTraceConfig.costTimeThreshold,
                                         enableLog = methodTraceConfig.enableLog,
                                         classPathMatcher = classPathMatcher,
@@ -200,6 +206,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                         jarOutput.write(
                             file.inputStream().use { classFileInputStream ->
                                 BytecodeInstrumentation.tryInstrument(
+                                    resourcesFolder = methodTraceConfig.resourcesFolder,
                                     costTimeThreshold = methodTraceConfig.costTimeThreshold,
                                     enableLog = methodTraceConfig.enableLog,
                                     classPathMatcher = classPathMatcher,
@@ -226,11 +233,7 @@ class VSMethodTracePlugin : Plugin<Project> {
 
     override fun apply(project: Project) {
 
-        val isApp = project.plugins.hasPlugin(AppPlugin::class.java)
-
-        if (!isApp) {
-            return
-        }
+        project.plugins.findPlugin(AppPlugin::class.java) ?: return
 
         // 添加扩展
         project.extensions.add("vsMethodTraceConfig", VSMethodTraceInitConfig::class.java)
@@ -243,6 +246,13 @@ class VSMethodTracePlugin : Plugin<Project> {
                     .findByType(AndroidComponentsExtension::class.java)
 
                 androidComponents?.onVariants { variant ->
+
+                    val resourcesFolderFile = variant.sources.resources?.all?.orNull?.find {
+                        it.asFile.path.contains("main/resources")
+                    }?.let { directory ->
+                        println("variant.name = ${variant.name} directory.asFile.path ====== ${directory.asFile.path}")
+                        directory.asFile
+                    }
 
                     val vsMethodTraceConfig =
                         project.extensions.findByType(VSMethodTraceInitConfig::class.java)
@@ -257,6 +267,7 @@ class VSMethodTracePlugin : Plugin<Project> {
                                 EXT_METHOD_TRACE_CONFIG,
                                 VSMethodTraceConfig(
                                     enableLog = vsMethodTraceConfig?.enableLog ?: false,
+                                    resourcesFolder = resourcesFolderFile,
                                     costTimeThreshold = vsMethodTraceConfig?.costTimeThreshold
                                         ?: Long.MAX_VALUE,
                                     includePackagePrefixSet = vsMethodTraceConfig?.includePackagePrefixSet

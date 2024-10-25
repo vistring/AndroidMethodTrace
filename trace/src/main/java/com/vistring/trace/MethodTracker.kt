@@ -1,7 +1,7 @@
 package com.vistring.trace
 
+import android.app.Application
 import android.os.Looper
-import android.util.Log
 import androidx.annotation.Keep
 import androidx.annotation.VisibleForTesting
 import java.util.LinkedList
@@ -11,7 +11,6 @@ import kotlin.concurrent.getOrSet
 @Keep
 data class MethodTraceInfo(
     val methodFlag: Int,
-    val methodName: String,
     val isMainThread: Boolean,
     val startTime: Long = 0,
     // sub 方法的总耗时, 包括了被追踪报告的和未被追踪报告的
@@ -26,7 +25,7 @@ data class MethodTraceInfo(
 @Keep
 object MethodTracker {
 
-    private const val TAG = "VSMethodTracker"
+    const val TAG = "VSMethodTracker"
 
     /**
      * 其实这个地方需要用 [Stack], 但是用 [LinkedList] 更好
@@ -48,39 +47,37 @@ object MethodTracker {
         methodCost: Long,
         methodTotalCost: Long,
     ) {
-        Log.e(
-            TAG,
-            "methodFlag = $methodFlag, methodTotalCost = $methodTotalCost, methodCost = $methodCost",
-        )
-        var isPrint = false
+        val stringBuilder = StringBuilder()
         Thread
             .currentThread()
             .stackTrace
-            // .take(8)
-            .forEach { stackTraceElement ->
-                if (isPrint) {
-                    Log.e(
-                        TAG,
-                        "\t\t$stackTraceElement",
-                    )
+            .run {
+                this.takeLast(n = this.size - 4)
+            }.forEachIndexed { index, stackTraceElement ->
+                if (index > 0) {
+                    stringBuilder.append(";")
                 }
-                if (MethodTracker::class.qualifiedName == stackTraceElement.className && "end" == stackTraceElement.methodName) {
-                    isPrint = true
-                }
+                stringBuilder.append(stackTraceElement.toString())
             }
+        MethodInfoUploader.addUploadTask(
+            task = MethodInfoUploader.Task(
+                methodFlag = methodFlag,
+                methodCost = methodCost,
+                methodTotalCost = methodTotalCost,
+                stackTraceStr = stringBuilder.toString(),
+            ),
+        )
     }
 
     // 不是给用户调用的, 是给插件生成的代码调用的
     @JvmStatic // 主要是为了字节码那边能够比较方便的调用到
     fun start(
         methodFlag: Int,
-        name: String,
     ) {
         methodLinkedList.getOrSet { LinkedList<MethodTraceInfo>() }.apply {
             this.add(
                 MethodTraceInfo(
                     methodFlag = methodFlag,
-                    methodName = name,
                     isMainThread = Looper.getMainLooper() == Looper.myLooper(),
                     startTime = System.currentTimeMillis(),
                 )
@@ -117,7 +114,6 @@ object MethodTracker {
     @JvmStatic // 主要是为了字节码那边能够比较方便的调用到
     fun end(
         methodFlag: Int,
-        name: String,
     ) {
         methodLinkedList.get()?.let { linkedList ->
             val currentMethodInfo = linkedList.removeLast()
@@ -152,6 +148,16 @@ object MethodTracker {
      */
     fun peek(): MethodTraceInfo? {
         return methodLinkedList.get()?.lastOrNull()
+    }
+
+    fun init(
+        application: Application,
+        appName: String,
+    ) {
+        if (appName.isBlank()) {
+            throw IllegalArgumentException("appName cannot be blank")
+        }
+        MethodInfoUploader.init(application = application)
     }
 
 }

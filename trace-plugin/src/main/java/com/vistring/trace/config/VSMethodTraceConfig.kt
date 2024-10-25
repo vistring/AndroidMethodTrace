@@ -1,5 +1,7 @@
 package com.vistring.trace.config
 
+import java.io.File
+
 /**
  * Gradle 中的配置类
  * 这里必须写 open class, 不能用 data class, 否则在 Gradle 插件使用中会出错
@@ -43,6 +45,7 @@ open class VSMethodTraceInitConfig(
 
 data class VSMethodTraceConfig(
     val enableLog: Boolean,
+    val resourcesFolder: File?,
     val costTimeThreshold: Long,
     val includePackagePrefixSet: Set<String>,
     val excludePackagePrefixSet: Set<String>,

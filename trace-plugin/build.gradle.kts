@@ -18,6 +18,7 @@ java {
 }
 
 dependencies {
+
     implementation(gradleApi())
     implementation(localGroovy())
     implementation("org.ow2.asm:asm-commons:9.7")
