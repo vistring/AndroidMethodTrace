@@ -16,7 +16,9 @@ object MethodMapping {
         lineNumber: Int,
     ): String {
         randomAccessFile.seek((lineNumber - 1L) * MAX_RECORD_LENGTH)
-        return randomAccessFile.readLine().trim()
+        val bytes = ByteArray(MAX_RECORD_LENGTH)
+        randomAccessFile.readFully(bytes, 0, MAX_RECORD_LENGTH)
+        return bytes.decodeToString().trim()
     }
 
     fun writeToLine(

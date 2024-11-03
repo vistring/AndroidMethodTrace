@@ -43,19 +43,15 @@ class MethodTrackerTest {
     fun testNormalMethodTrace() {
         MethodTracker.start(
             methodFlag = 1,
-            name = "1",
         )
         MethodTracker.start(
             methodFlag = 1,
-            name = "1",
         )
         MethodTracker.end(
             methodFlag = 1,
-            name = "1",
         )
         MethodTracker.end(
             methodFlag = 1,
-            name = "1",
         )
         assertTrue(
             MethodTracker.peek() == null,
@@ -66,25 +62,20 @@ class MethodTrackerTest {
     fun testCrashWhenEndCalledMoreThenStart() {
         MethodTracker.start(
             methodFlag = 1,
-            name = "1",
         )
         MethodTracker.start(
             methodFlag = 1,
-            name = "1",
         )
         MethodTracker.end(
             methodFlag = 1,
-            name = "1",
         )
         MethodTracker.end(
             methodFlag = 1,
-            name = "1",
         )
         assertTrue(
             kotlin.runCatching {
                 MethodTracker.end(
                     methodFlag = 1,
-                    name = "1",
                 )
             }.isFailure
         )
@@ -96,17 +87,14 @@ class MethodTrackerTest {
     @Test
     fun testAsmTimeCost() {
         val uselessFlag = Int.MAX_VALUE
-        val testName = "MethodTrackerTest.testName"
         val startTime = System.currentTimeMillis()
         val loopCount = 100000
         repeat(times = loopCount) {
             MethodTracker.start(
                 methodFlag = uselessFlag,
-                name = testName,
             )
             MethodTracker.end(
                 methodFlag = uselessFlag,
-                name = testName,
             )
         }
         val endTime = System.currentTimeMillis()

@@ -38,7 +38,7 @@ object MethodTracker {
      * [Long.MAX_VALUE] 表示不生效
      */
     @VisibleForTesting
-    val costTimeThread: Long
+    val costTimeThreshold: Long
         get() = Long.MAX_VALUE
 
     @VisibleForTesting
@@ -128,7 +128,7 @@ object MethodTracker {
                 this.subMethodTotalTime += methodTotalCost // += 是因为上层方法可能调用多个方法
             }
             if (currentMethodInfo.isMainThread &&
-                (methodCost + currentMethodInfo.subMethodTotalUnTraceTime) > costTimeThread
+                (methodCost + currentMethodInfo.subMethodTotalUnTraceTime) > costTimeThreshold
             ) {
                 logTraceInfo(
                     methodFlag = methodFlag,
@@ -157,7 +157,10 @@ object MethodTracker {
         if (appName.isBlank()) {
             throw IllegalArgumentException("appName cannot be blank")
         }
-        MethodInfoUploader.init(application = application)
+        MethodInfoUploader.init(
+            application = application,
+            appName = appName,
+        )
     }
 
 }

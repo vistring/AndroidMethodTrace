@@ -48,7 +48,11 @@ android {
 }
 
 dependencies {
+
     compileOnly(libs.androidx.annotation.jvm)
+    // okhttp
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     // 引入 junit 依赖
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.mockito:mockito-core:4.8.1")

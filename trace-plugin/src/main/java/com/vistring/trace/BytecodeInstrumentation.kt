@@ -523,7 +523,7 @@ private class InstrumentationClassVisitor(
             MethodMapping.writeToLine(
                 randomAccessFile = randomAccessFile,
                 lineNumber = methodFlag,
-                methodSignature = "$dotClassName/name:${descriptor.orEmpty()}",
+                methodSignature = "$dotClassName.$name:${descriptor.orEmpty()}",
             )
 
             val nameForTrace = "$name$RENAME_FOR_SUFFIX$methodFlag"
@@ -788,10 +788,12 @@ object BytecodeInstrumentation {
 
     private const val METHOD_TRACKER_CLASS_NAME = "com.vistring.trace.MethodTracker"
     private const val METHOD_TRACE_INFO_CLASS_NAME = "com.vistring.trace.MethodTraceInfo"
+    private const val METHOD_INFO_UPLOADER_CLASS_NAME = "com.vistring.trace.MethodInfoUploader"
 
     private val CLASS_NAME_IGNORE_LIST = listOf(
         METHOD_TRACKER_CLASS_NAME,
         METHOD_TRACE_INFO_CLASS_NAME,
+        METHOD_INFO_UPLOADER_CLASS_NAME,
         // 这个会在 MethodTracker 的 start 方法中调用, 会导致死循环,
         "kotlin.jvm.internal.Intrinsics",
     )
@@ -868,7 +870,7 @@ object BytecodeInstrumentation {
                             ): MethodVisitor? {
                                 val originMethodVisitor =
                                     super.visitMethod(access, name, descriptor, signature, exceptions)
-                                if ("getCostTimeThread" == name) {
+                                if ("getCostTimeThreshold" == name) {
                                     return object : AdviceAdapter(
                                         ASM_API, originMethodVisitor,
                                         access, name, descriptor,
